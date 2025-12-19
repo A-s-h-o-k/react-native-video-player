@@ -37,5 +37,18 @@
   },
   "engines": {
     "node": ">=20"
+  },
+   "codegenConfig": {
+    "name": "AppSpec",
+    "type": "components",
+    "jsSrcsDir": "specs",
+    "android": {
+      "javaPackageName": "com.videoplayer"
+    },
+    "ios": {
+      "componentProvider": {
+        "CustomWebView": "RCTVideoPlayer"
+      }
+    }
   }
 }
