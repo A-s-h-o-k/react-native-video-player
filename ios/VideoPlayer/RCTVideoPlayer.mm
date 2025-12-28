@@ -12,6 +12,9 @@
 #import <AVFoundation/AVFoundation.h>
 #import <React/RCTLog.h>
 #import <React/RCTUIManager.h>
+#import "ControlLayer.h"
+
+
 
 #pragma mark - Native View
 
@@ -19,12 +22,17 @@
 
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic, strong) AVPlayerLayer *playerLayer;
+@property (nonatomic, strong) UIButton *playButton;
+@property (nonatomic, strong) ControlLayer * controlsLayer;
+//@property (nonatomic, strong) A
 
 /** matches: sourceURL?: string */
 @property (nonatomic, copy) NSString *sourceURL;
 
 /** matches: onScriptLoaded?: BubblingEventHandler */
 @property (nonatomic, copy) RCTBubblingEventBlock onScriptLoaded;
+
+@property (nonatomic, assign) BOOL play;
 
 @end
 
@@ -73,11 +81,14 @@
 
   self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
   self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
-  self.playerLayer.frame = self.bounds;
-
+  self.controlsLayer = [[ControlLayer alloc] initWithFrame:CGRectMake(0, 0, 200, 200)];
+  [self.controlsLayer setVideoPlayer:self.player];
+  self.controlsLayer.opaque = YES;
   [self.layer addSublayer:self.playerLayer];
+  [self addSubview: self.controlsLayer];
+  self.playerLayer.zPosition = 0;
+  self.controlsLayer.layer.zPosition = 1;
   [self.player play];
-
   [self emitResult:@"success"];
 }
 
@@ -98,6 +109,7 @@
 {
   [super layoutSubviews];
   self.playerLayer.frame = self.bounds;
+  self.controlsLayer.frame = self.bounds;
 }
 
 #pragma mark - Cleanup
@@ -108,7 +120,7 @@
     [self.player pause];
     [self.playerLayer removeFromSuperlayer];
     self.player = nil;
-    self.playerLxayer = nil;
+    self.playerLayer = nil;
   }
 }
 

@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		0C80B921A6F3F58F76C31292 /* libPods-Player.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-Player.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		25483ECF2EFD43B100104BC5 /* ControlLayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25483ECE2EFD43B100104BC5 /* ControlLayer.mm */; };
+		25688DEE2EFF18ED00E61244 /* EventManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 25688DED2EFF18ED00E61244 /* EventManager.m */; };
 		2584BB2F2EF1D05A00C473C8 /* RCTVideoPlayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */; };
 		2584BB322EF1D2EF00C473C8 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */; };
 		6A4A24E34DE2DB930945705E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
@@ -21,10 +23,14 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Player/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Player/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = Player/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		25483ECD2EFD439900104BC5 /* ControlLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ControlLayer.h; sourceTree = "<group>"; };
+		25483ECE2EFD43B100104BC5 /* ControlLayer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ControlLayer.mm; sourceTree = "<group>"; };
+		25688DED2EFF18ED00E61244 /* EventManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = EventManager.m; sourceTree = "<group>"; };
 		2584BB2D2EF1D05A00C473C8 /* Player-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Player-Bridging-Header.h"; sourceTree = "<group>"; };
 		2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RCTVideoPlayer.mm; sourceTree = "<group>"; };
 		2584BB302EF1D07000C473C8 /* RCTVideoPlayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCTVideoPlayer.h; sourceTree = "<group>"; };
 		2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		25DD7D882EF6C370009E0F50 /* EventManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EventManager.h; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-Player.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Player.debug.xcconfig"; path = "Target Support Files/Pods-Player/Pods-Player.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-Player.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Player.release.xcconfig"; path = "Target Support Files/Pods-Player/Pods-Player.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-Player.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Player.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -58,14 +64,49 @@
 			name = Player;
 			sourceTree = "<group>";
 		};
+		25483ECA2EFD409B00104BC5 /* New Group */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = "New Group";
+			sourceTree = "<group>";
+		};
+		25483ECB2EFD413900104BC5 /* Layers */ = {
+			isa = PBXGroup;
+			children = (
+				25483ECC2EFD436300104BC5 /* ControlLayer */,
+			);
+			path = Layers;
+			sourceTree = "<group>";
+		};
+		25483ECC2EFD436300104BC5 /* ControlLayer */ = {
+			isa = PBXGroup;
+			children = (
+				25483ECD2EFD439900104BC5 /* ControlLayer.h */,
+				25483ECE2EFD43B100104BC5 /* ControlLayer.mm */,
+			);
+			path = ControlLayer;
+			sourceTree = "<group>";
+		};
 		2584BB2C2EF1D03C00C473C8 /* VideoPlayer */ = {
 			isa = PBXGroup;
 			children = (
+				25483ECB2EFD413900104BC5 /* Layers */,
+				25DD7D872EF6C30C009E0F50 /* EventManager */,
 				2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */,
 				2584BB2D2EF1D05A00C473C8 /* Player-Bridging-Header.h */,
 				2584BB302EF1D07000C473C8 /* RCTVideoPlayer.h */,
 			);
 			path = VideoPlayer;
+			sourceTree = "<group>";
+		};
+		25DD7D872EF6C30C009E0F50 /* EventManager */ = {
+			isa = PBXGroup;
+			children = (
+				25DD7D882EF6C370009E0F50 /* EventManager.h */,
+				25688DED2EFF18ED00E61244 /* EventManager.m */,
+			);
+			path = EventManager;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
@@ -89,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				2584BB2C2EF1D03C00C473C8 /* VideoPlayer */,
+				25483ECA2EFD409B00104BC5 /* New Group */,
 				13B07FAE1A68108700A75B9A /* Player */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -273,7 +315,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				25483ECF2EFD43B100104BC5 /* ControlLayer.mm in Sources */,
 				2584BB2F2EF1D05A00C473C8 /* RCTVideoPlayer.mm in Sources */,
+				25688DEE2EFF18ED00E61244 /* EventManager.m in Sources */,
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
