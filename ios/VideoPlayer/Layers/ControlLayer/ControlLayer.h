@@ -23,6 +23,9 @@
 @property (nonatomic, strong) UIButton * nextButton;
 @property (nonatomic, strong) UIButton * previousButton;
 @property (nonatomic, strong) UIStackView * stackView;
+@property (nonatomic, strong) UIButton * forward;
+@property (nonatomic, strong) UIButton * backward;
+
 
 -(void) setVideoPlayer: (AVPlayer*) player;
 //-(void) onPlay;

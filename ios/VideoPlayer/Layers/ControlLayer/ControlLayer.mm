@@ -7,6 +7,8 @@
 
 UIImage *playImage = [UIImage systemImageNamed:@"play.fill"];
 UIImage *pauseImage = [UIImage systemImageNamed:@"pause.fill"];
+UIImage *backwardImage = [UIImage systemImageNamed: @"30.arrow.trianglehead.counterclockwise"];
+UIImage *forwardImage = [UIImage systemImageNamed:@"30.arrow.trianglehead.clockwise"];
 UIColor *lightTransparent = [UIColor colorWithWhite:0.1 alpha:0.5];
 NSTimer *_controlsAutoHideTimer;
 BOOL _controlsVisible;
@@ -15,11 +17,12 @@ BOOL _controlsVisible;
     self = [super initWithFrame:frame];
     
     if (self) {
-        [self setupUI];
+        [self setupUI:frame];
     }
     self.playing = NO;
     self.backgroundColor = UIColor.clearColor;
     _controlsVisible = YES;
+    self.translatesAutoresizingMaskIntoConstraints = NO;
     return self;
 }
 
@@ -33,6 +36,7 @@ BOOL _controlsVisible;
 -(void) onPausePressed {
   NSLog(@"Pause Button Pressed");
   [self showControlsAnimated:YES];
+  NSLog(@"Player score: %d", self.playing);
   if(self.playing) {
     [self.player pause];
     self.playing = NO;
@@ -43,28 +47,25 @@ BOOL _controlsVisible;
     [self.playButton setImage:pauseImage forState:UIControlStateNormal];
   }
 }
-- (void)setupUI {
-    // Outer stack fills the entire ControlLayer
+- (void)setupUI: (CGRect) frame {
+    
+    // control layer main stack view
     self.stackView = [[UIStackView alloc] init];
     self.stackView.translatesAutoresizingMaskIntoConstraints = NO;
     self.stackView.axis = UILayoutConstraintAxisHorizontal; // or Vertical depending on your design
     self.stackView.alignment = UIStackViewAlignmentCenter;  // centers inner content vertically for horizontal axis
-    self.stackView.distribution = UIStackViewDistributionFill;
+    self.stackView.distribution = UIStackViewDistributionEqualCentering;
     self.stackView.spacing = 0;
     self.stackView.backgroundColor = UIColor.clearColor;
 
     [self addSubview:self.stackView];
-
-    // Constrain outer stack to fill parent (inherit width/height)
     [NSLayoutConstraint activateConstraints:@[
         [self.stackView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
         [self.stackView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
         [self.stackView.topAnchor constraintEqualToAnchor:self.topAnchor],
         [self.stackView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
     ]];
-
     self.stackView.alpha = 1.0;
-
     [self setUserInteractionEnabled:YES];
     
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleControlsTap:)];
@@ -75,12 +76,17 @@ BOOL _controlsVisible;
     UIStackView *buttonStack = [[UIStackView alloc] init];
     buttonStack.translatesAutoresizingMaskIntoConstraints = NO;
     buttonStack.axis = UILayoutConstraintAxisHorizontal;
-    buttonStack.alignment = UIStackViewAlignmentCenter;
-    buttonStack.distribution = UIStackViewDistributionEqualSpacing;
-    buttonStack.spacing = 12.0;
+    buttonStack.alignment = UIStackViewAlignmentFill;
+    buttonStack.distribution = UIStackViewDistributionEqualCentering;
+    buttonStack.spacing = 10.0;
+  [self.stackView addArrangedSubview:buttonStack];
+//  [NSLayoutConstraint activateConstraints:@[
+//      [buttonStack.centerXAnchor constraintEqualToAnchor:self.stackView.centerXAnchor],
+//      [buttonStack.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.stackView.leadingAnchor constant:20.0],
+//      [buttonStack.trailingAnchor constraintLessThanOrEqualToAnchor:self.stackView.trailingAnchor constant:-20.0]
+//  ]];
+  
     
-    [self.stackView addArrangedSubview:buttonStack];
-
     // Create play button
     self.playButton = [UIButton buttonWithType:UIButtonTypeSystem];
     self.playButton.translatesAutoresizingMaskIntoConstraints = NO;
@@ -90,49 +96,40 @@ BOOL _controlsVisible;
     self.playButton.clipsToBounds = YES;
   self.playButton.layer.cornerRadius = 80/2;
     [self.playButton addTarget:self action:@selector(onPausePressed) forControlEvents:UIControlEventTouchUpInside];
-
-  
+  self.backward = [UIButton buttonWithType:UIButtonTypeSystem];
+  self.backward.translatesAutoresizingMaskIntoConstraints = NO;
+  [self.backward setBackgroundColor:lightTransparent];
+  [self.backward setImage:backwardImage forState:UIControlStateNormal];
+  self.backward.tintColor = UIColor.whiteColor;
+  self.backward.clipsToBounds = YES;
+self.backward.layer.cornerRadius = 80/2;
+  self.forward = [UIButton buttonWithType:UIButtonTypeSystem];
+  self.forward.translatesAutoresizingMaskIntoConstraints = NO;
+  [self.forward setBackgroundColor:lightTransparent];
+  [self.forward setImage:forwardImage forState:UIControlStateNormal];
+  self.forward.tintColor = UIColor.whiteColor;
+  self.forward.clipsToBounds = YES;
+self.forward.layer.cornerRadius = 80/2;
+  [buttonStack addArrangedSubview:self.backward];
+  [buttonStack addArrangedSubview:self.playButton];
+  [buttonStack addArrangedSubview:self.forward];
+  buttonStack.layoutMargins = UIEdgeInsetsMake(0, 40, 0, 40);
+  buttonStack.layoutMarginsRelativeArrangement = YES;
     [NSLayoutConstraint activateConstraints:@[
         [self.playButton.widthAnchor constraintEqualToConstant:80.0],
         [self.playButton.heightAnchor constraintEqualToConstant:80.0]
     ]];
-
-    // Prevent horizontal stretching
-    [self.playButton setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
-    [self.playButton setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
-
-    // Add button to the inner button stack
-    [buttonStack addArrangedSubview:self.playButton];
-
-    // Optional: If you want the button group centered in the outer stack
-    // and the outer stack is horizontal, you can pad with flexible spacers:
-    UIView *leadingSpacer = [[UIView alloc] init];
-    UIView *trailingSpacer = [[UIView alloc] init];
-    [leadingSpacer setContentHuggingPriority:UILayoutPriorityDefaultLow forAxis:UILayoutConstraintAxisHorizontal];
-    [trailingSpacer setContentHuggingPriority:UILayoutPriorityDefaultLow forAxis:UILayoutConstraintAxisHorizontal];
-
-    // If you prefer explicit centering without spacers, you can also wrap buttonStack in a container view
-    // and center that container via constraints. But spacers work well with stack distributions like Fill.
-
-    // Example using Fill with spacers to center the button group:
-    // Clear current arranged subviews and re-add with spacers:
-    [self.stackView removeArrangedSubview:buttonStack];
-    [buttonStack removeFromSuperview];
-    self.stackView.distribution = UIStackViewDistributionFill;
-
-    [self.stackView addArrangedSubview:leadingSpacer];
-    [self.stackView addArrangedSubview:buttonStack];
-    [self.stackView addArrangedSubview:trailingSpacer];
-
-    // Give spacers equal width so the button stack stays centered
-    [leadingSpacer.widthAnchor constraintEqualToAnchor:trailingSpacer.widthAnchor].active = YES;
-
+  [NSLayoutConstraint activateConstraints:@[
+      [self.backward.widthAnchor constraintEqualToConstant:80.0],
+      [self.backward.heightAnchor constraintEqualToConstant:80.0]
+  ]];
+  [NSLayoutConstraint activateConstraints:@[
+      [self.forward.widthAnchor constraintEqualToConstant:80.0],
+      [self.forward.heightAnchor constraintEqualToConstant:80.0]
+  ]];
     [self scheduleAutoHideControls];
 }
--(void) layoutSubviews {
-  [super layoutSubviews];
-//  self.stackView.frame = self.frame;
-}
+
 
 - (void)handleControlsTap:(UITapGestureRecognizer *)recognizer {
   NSLog(@"tap gesture on stack view");
@@ -193,3 +190,5 @@ BOOL _controlsVisible;
 }
 
 @end
+
+

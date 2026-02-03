@@ -26,8 +26,8 @@
 @property (nonatomic, strong) ControlLayer * controlsLayer;
 //@property (nonatomic, strong) A
 
-/** matches: sourceURL?: string */
-@property (nonatomic, copy) NSString *sourceURL;
+/** matches: videoUrl?: string */
+@property (nonatomic, copy) NSString *videoUrl;
 
 /** matches: onScriptLoaded?: BubblingEventHandler */
 @property (nonatomic, copy) RCTBubblingEventBlock onScriptLoaded;
@@ -40,29 +40,32 @@
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
+  NSLog(@"calling initWithFrame");
   if ((self = [super initWithFrame:frame])) {
     self.backgroundColor = UIColor.blackColor;
   }
+
   return self;
 }
 
 #pragma mark - Prop Setter
 
-- (void)setSourceURL:(NSString *)sourceURL
+- (void)setVideoUrl:(NSString *)videoUrl
 {
-  if (_sourceURL && [_sourceURL isEqualToString:sourceURL]) {
+   NSLog(@"calling setVideoUrl:");
+  if (_videoUrl && [_videoUrl isEqualToString:videoUrl]) {
     return;
   }
 
-  _sourceURL = [sourceURL copy];
+  _videoUrl = [videoUrl copy];
 
-  if (!_sourceURL || _sourceURL.length == 0) {
+  if (!_videoUrl || _videoUrl.length == 0) {
     return;
   }
 
-  NSURL *url = [NSURL URLWithString:_sourceURL];
+  NSURL *url = [NSURL URLWithString:_videoUrl];
   if (!url) {
-    RCTLogError(@"[VideoPlayer] Invalid URL: %@", _sourceURL);
+    RCTLogError(@"[VideoPlayer] Invalid URL:");
     [self emitResult:@"error"];
     return;
   }
@@ -70,25 +73,51 @@
   [self loadVideo:url];
 }
 
+- (void)setPlay:(BOOL)play
+{
+  NSLog(@"calling setPlay");
+  if (_play == play) {
+    return;
+  }
+  _play = play;
+
+  if (self.player) {
+    if (_play) {
+      [self.player play];
+    } else {
+      [self.player pause];
+    }
+  }
+}
 #pragma mark - Player
 
 - (void)loadVideo:(NSURL *)url
 {
+  NSLog(@"calling loadVideo:");
   [self cleanup];
 
   AVPlayerItem *item = [AVPlayerItem playerItemWithURL:url];
   self.player = [AVPlayer playerWithPlayerItem:item];
 
   self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
-  self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
-  self.controlsLayer = [[ControlLayer alloc] initWithFrame:CGRectMake(0, 0, 200, 200)];
+  self.playerLayer.videoGravity = AVLayerVideoGravityResize; // Match Android's RESIZE_MODE_FIT
+  self.controlsLayer = [[ControlLayer alloc] initWithFrame:self.frame]; // Initialize without a hardcoded frame
   [self.controlsLayer setVideoPlayer:self.player];
   self.controlsLayer.opaque = YES;
   [self.layer addSublayer:self.playerLayer];
   [self addSubview: self.controlsLayer];
+  // setting the constraint for control layer to take the height width as parent
+  [NSLayoutConstraint activateConstraints:@[
+    [self.controlsLayer.trailingAnchor  constraintEqualToAnchor :  self.trailingAnchor],
+    [self.controlsLayer.leadingAnchor constraintEqualToAnchor : self.leadingAnchor],
+    [self.controlsLayer.topAnchor constraintEqualToAnchor: self.topAnchor],
+    [self.controlsLayer.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
+  ]];
   self.playerLayer.zPosition = 0;
   self.controlsLayer.layer.zPosition = 1;
-  [self.player play];
+  if (self.play) {
+    [self.player play];
+  }
   [self emitResult:@"success"];
 }
 
@@ -107,9 +136,10 @@
 
 - (void)layoutSubviews
 {
+  NSLog(@"calling layoutSubviews");
   [super layoutSubviews];
   self.playerLayer.frame = self.bounds;
-  self.controlsLayer.frame = self.bounds;
+  
 }
 
 #pragma mark - Cleanup
@@ -142,10 +172,13 @@ RCT_EXPORT_MODULE(VideoPlayer)
   return [[RCTVideoPlayerView alloc] init];
 }
 
-/** sourceURL?: string */
-RCT_EXPORT_VIEW_PROPERTY(sourceURL, NSString)
+/** videoUrl?: string */
+RCT_EXPORT_VIEW_PROPERTY(videoUrl, NSString)
 
 /** onScriptLoaded?: BubblingEventHandler<{ result }> */
 RCT_EXPORT_VIEW_PROPERTY(onScriptLoaded, RCTBubblingEventBlock)
+
+/** play?: boolean */
+RCT_EXPORT_VIEW_PROPERTY(play, BOOL)
 
 @end
