@@ -1,15 +1,17 @@
+// ControlLayer.mm
 #import "ControlLayer.h"
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+#import "TopSection.h"
+#import "CenterSection.h"
+#import "BottomSection.h"
+
 @implementation ControlLayer
 
-UIImage *playImage = [UIImage systemImageNamed:@"play.fill"];
-UIImage *pauseImage = [UIImage systemImageNamed:@"pause.fill"];
-UIImage *backwardImage = [UIImage systemImageNamed: @"30.arrow.trianglehead.counterclockwise"];
-UIImage *forwardImage = [UIImage systemImageNamed:@"30.arrow.trianglehead.clockwise"];
-UIColor *lightTransparent = [UIColor colorWithWhite:0.1 alpha:0.5];
+UIImage *playImage1 = [UIImage systemImageNamed:@"play.fill"];
+UIImage *pauseImage1 = [UIImage systemImageNamed:@"pause.fill"];
 NSTimer *_controlsAutoHideTimer;
 BOOL _controlsVisible;
 
@@ -40,11 +42,11 @@ BOOL _controlsVisible;
   if(self.playing) {
     [self.player pause];
     self.playing = NO;
-    [self.playButton setImage:playImage forState:UIControlStateNormal];
+//    [self.playButton setImage:playImage1 forState:UIControlStateNormal];
   } else {
     [self.player play];
     self.playing = YES;
-    [self.playButton setImage:pauseImage forState:UIControlStateNormal];
+//    [self.playButton setImage:pauseImage1 forState:UIControlStateNormal];
   }
 }
 - (void)setupUI: (CGRect) frame {
@@ -52,7 +54,7 @@ BOOL _controlsVisible;
     // control layer main stack view
     self.stackView = [[UIStackView alloc] init];
     self.stackView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.stackView.axis = UILayoutConstraintAxisHorizontal; // or Vertical depending on your design
+    self.stackView.axis = UILayoutConstraintAxisVertical; // or Vertical depending on your design
     self.stackView.alignment = UIStackViewAlignmentCenter;  // centers inner content vertically for horizontal axis
     self.stackView.distribution = UIStackViewDistributionEqualCentering;
     self.stackView.spacing = 0;
@@ -73,61 +75,34 @@ BOOL _controlsVisible;
     self.userInteractionEnabled = YES;
 
     // Inner stack specifically for buttons
-    UIStackView *buttonStack = [[UIStackView alloc] init];
-    buttonStack.translatesAutoresizingMaskIntoConstraints = NO;
-    buttonStack.axis = UILayoutConstraintAxisHorizontal;
-    buttonStack.alignment = UIStackViewAlignmentFill;
-    buttonStack.distribution = UIStackViewDistributionEqualCentering;
-    buttonStack.spacing = 10.0;
-  [self.stackView addArrangedSubview:buttonStack];
-//  [NSLayoutConstraint activateConstraints:@[
-//      [buttonStack.centerXAnchor constraintEqualToAnchor:self.stackView.centerXAnchor],
-//      [buttonStack.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.stackView.leadingAnchor constant:20.0],
-//      [buttonStack.trailingAnchor constraintLessThanOrEqualToAnchor:self.stackView.trailingAnchor constant:-20.0]
-//  ]];
+    self.topControlView = [[TopSection alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 40)];
   
-    
-    // Create play button
-    self.playButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    self.playButton.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.playButton setBackgroundColor:lightTransparent];
-    [self.playButton setImage:playImage forState:UIControlStateNormal];
-    self.playButton.tintColor = UIColor.whiteColor;
-    self.playButton.clipsToBounds = YES;
-  self.playButton.layer.cornerRadius = 80/2;
-    [self.playButton addTarget:self action:@selector(onPausePressed) forControlEvents:UIControlEventTouchUpInside];
-  self.backward = [UIButton buttonWithType:UIButtonTypeSystem];
-  self.backward.translatesAutoresizingMaskIntoConstraints = NO;
-  [self.backward setBackgroundColor:lightTransparent];
-  [self.backward setImage:backwardImage forState:UIControlStateNormal];
-  self.backward.tintColor = UIColor.whiteColor;
-  self.backward.clipsToBounds = YES;
-self.backward.layer.cornerRadius = 80/2;
-  self.forward = [UIButton buttonWithType:UIButtonTypeSystem];
-  self.forward.translatesAutoresizingMaskIntoConstraints = NO;
-  [self.forward setBackgroundColor:lightTransparent];
-  [self.forward setImage:forwardImage forState:UIControlStateNormal];
-  self.forward.tintColor = UIColor.whiteColor;
-  self.forward.clipsToBounds = YES;
-self.forward.layer.cornerRadius = 80/2;
-  [buttonStack addArrangedSubview:self.backward];
-  [buttonStack addArrangedSubview:self.playButton];
-  [buttonStack addArrangedSubview:self.forward];
-  buttonStack.layoutMargins = UIEdgeInsetsMake(0, 40, 0, 40);
-  buttonStack.layoutMarginsRelativeArrangement = YES;
+
+    self.topControlView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.stackView addArrangedSubview:self.topControlView];
+  [NSLayoutConstraint activateConstraints:@[
+    [self.topControlView.heightAnchor constraintEqualToAnchor: self.stackView.heightAnchor multiplier: 0.15],
+    [self.topControlView.widthAnchor constraintEqualToAnchor: self.stackView.widthAnchor]
+  ]];
+    self.centerControlView = [[CenterSection alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 100)];
+    self.centerControlView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.centerControlView.axis = UILayoutConstraintAxisHorizontal;
+    self.centerControlView.alignment = UIStackViewAlignmentCenter;
+    self.centerControlView.distribution = UIStackViewDistributionEqualCentering;
+    self.centerControlView.spacing = 10.0;
+    [self.stackView addArrangedSubview:self.centerControlView];
     [NSLayoutConstraint activateConstraints:@[
-        [self.playButton.widthAnchor constraintEqualToConstant:80.0],
-        [self.playButton.heightAnchor constraintEqualToConstant:80.0]
+        [self.centerControlView.heightAnchor constraintEqualToAnchor:self.stackView.heightAnchor multiplier:0.15],
+        [self.centerControlView.widthAnchor constraintEqualToAnchor:self.stackView.widthAnchor]
     ]];
+  self.bottomControlView = [[BottomSection alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 50)];
+  [self.stackView addArrangedSubview: self.bottomControlView];
   [NSLayoutConstraint activateConstraints:@[
-      [self.backward.widthAnchor constraintEqualToConstant:80.0],
-      [self.backward.heightAnchor constraintEqualToConstant:80.0]
+    [self.bottomControlView.widthAnchor constraintEqualToAnchor: self.stackView.widthAnchor]
   ]];
-  [NSLayoutConstraint activateConstraints:@[
-      [self.forward.widthAnchor constraintEqualToConstant:80.0],
-      [self.forward.heightAnchor constraintEqualToConstant:80.0]
-  ]];
-    [self scheduleAutoHideControls];
+   
+  
+  
 }
 
 
@@ -190,5 +165,10 @@ self.forward.layer.cornerRadius = 80/2;
 }
 
 @end
+
+
+
+
+
 
 

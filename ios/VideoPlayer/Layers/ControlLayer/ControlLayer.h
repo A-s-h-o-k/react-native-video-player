@@ -19,12 +19,15 @@
 
 @property (nonatomic, assign) BOOL playing;
 @property (nonatomic, strong) AVPlayer * player;
-@property (nonatomic, strong) UIButton * playButton;
+//@property (nonatomic, strong) UIButton * playButton;
 @property (nonatomic, strong) UIButton * nextButton;
 @property (nonatomic, strong) UIButton * previousButton;
 @property (nonatomic, strong) UIStackView * stackView;
 @property (nonatomic, strong) UIButton * forward;
 @property (nonatomic, strong) UIButton * backward;
+@property (nonatomic, strong) UIStackView * topControlView;
+@property (nonatomic, strong) UIStackView * centerControlView;
+@property (nonatomic, strong) UIStackView * bottomControlView;
 
 
 -(void) setVideoPlayer: (AVPlayer*) player;
