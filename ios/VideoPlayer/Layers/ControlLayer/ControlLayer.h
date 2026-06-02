@@ -9,6 +9,8 @@
 #import <UIKit/UIButton.h>
 #import <AVFoundation/AVPlayerLayer.h>
 #import <UIKit/UIKit.h>
+#import "../../EventManager/EventManager.cpp"
+#import "./CenterSection/CenterSection.h"
 
 
 
@@ -26,9 +28,10 @@
 @property (nonatomic, strong) UIButton * forward;
 @property (nonatomic, strong) UIButton * backward;
 @property (nonatomic, strong) UIStackView * topControlView;
-@property (nonatomic, strong) UIStackView * centerControlView;
+@property (nonatomic, strong) CenterSection * centerControlView;
 @property (nonatomic, strong) UIStackView * bottomControlView;
-
+@property (nonatomic, assign) EventManager * managerRef;
+@property (nonatomic, strong) NSTimer * _controlsAutoHideTimer;
 
 -(void) setVideoPlayer: (AVPlayer*) player;
 //-(void) onPlay;
