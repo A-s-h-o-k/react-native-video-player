@@ -21,8 +21,9 @@ public:
             ControlLayer *l = layer_;
             if (!l) return;
             BOOL isPlaying = (newState == PlayerCore::PlaybackState::Playing);
+            BOOL isEnded = (newState == PlayerCore::PlaybackState::Ended);
             l.playing = isPlaying;
-            [l.centerControlView setPlaying:isPlaying];
+            [l.centerControlView setPlaying:isPlaying isEnded:isEnded];
 
             if (newState == PlayerCore::PlaybackState::Buffering) {
                 [l.bufferingSpinner startAnimating];
@@ -81,22 +82,19 @@ private:
 }
 
 - (void)setupUI:(CGRect)frame {
-  // 1. Master Vertical Stack View
-  self.stackView = [[UIStackView alloc] init];
-  self.stackView.translatesAutoresizingMaskIntoConstraints = NO;
-  self.stackView.axis = UILayoutConstraintAxisVertical;
-  self.stackView.alignment = UIStackViewAlignmentCenter;
-  self.stackView.distribution = UIStackViewDistributionEqualCentering;
-  self.stackView.spacing = 0;
-  self.stackView.backgroundColor = UIColor.clearColor;
-  self.stackView.alpha = 1.0;
-  [self addSubview:self.stackView];
+  // 1. Master Controls Container View (fades in/out during auto-hide)
+  self.controlsContainerView = [[UIView alloc] init];
+  self.controlsContainerView.translatesAutoresizingMaskIntoConstraints = NO;
+  self.controlsContainerView.backgroundColor = UIColor.clearColor;
+  self.controlsContainerView.alpha = 1.0;
+  [self addSubview:self.controlsContainerView];
+  self.stackView = self.controlsContainerView;
 
   [NSLayoutConstraint activateConstraints:@[
-    [self.stackView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
-    [self.stackView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
-    [self.stackView.topAnchor constraintEqualToAnchor:self.topAnchor],
-    [self.stackView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
+    [self.controlsContainerView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
+    [self.controlsContainerView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
+    [self.controlsContainerView.topAnchor constraintEqualToAnchor:self.topAnchor],
+    [self.controlsContainerView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
   ]];
 
   // 2. Background Tap Gesture to Toggle Controls
@@ -104,34 +102,39 @@ private:
   [self addGestureRecognizer:tap];
   self.userInteractionEnabled = YES;
 
-  // 3. Top Section Slot
-  self.topControlView = [[TopSection alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 44)];
+  // 3. Top Section Slot (Pinned directly to the top edge)
+  self.topControlView = [[TopSection alloc] initWithFrame:CGRectZero];
   self.topControlView.delegate = self;
   self.topControlView.translatesAutoresizingMaskIntoConstraints = NO;
-  [self.stackView addArrangedSubview:self.topControlView];
+  [self.controlsContainerView addSubview:self.topControlView];
   [NSLayoutConstraint activateConstraints:@[
-    [self.topControlView.widthAnchor constraintEqualToAnchor:self.stackView.widthAnchor]
+    [self.topControlView.leadingAnchor constraintEqualToAnchor:self.controlsContainerView.leadingAnchor],
+    [self.topControlView.trailingAnchor constraintEqualToAnchor:self.controlsContainerView.trailingAnchor],
+    [self.topControlView.topAnchor constraintEqualToAnchor:self.controlsContainerView.topAnchor]
   ]];
 
-  // 4. Center Section Slot
-  self.centerControlView = [[CenterSection alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 100)];
+  // 4. Center Section Slot (Centered horizontally and vertically)
+  self.centerControlView = [[CenterSection alloc] initWithFrame:CGRectZero];
   self.centerControlView.delegate = self;
-  [self.stackView addArrangedSubview:self.centerControlView];
+  self.centerControlView.translatesAutoresizingMaskIntoConstraints = NO;
+  [self.controlsContainerView addSubview:self.centerControlView];
   [NSLayoutConstraint activateConstraints:@[
-    [self.centerControlView.heightAnchor constraintEqualToAnchor:self.stackView.heightAnchor multiplier:0.25],
-    [self.centerControlView.widthAnchor constraintEqualToAnchor:self.stackView.widthAnchor]
+    [self.centerControlView.centerXAnchor constraintEqualToAnchor:self.controlsContainerView.centerXAnchor],
+    [self.centerControlView.centerYAnchor constraintEqualToAnchor:self.controlsContainerView.centerYAnchor]
   ]];
 
-  // 5. Bottom Section Slot
-  self.bottomControlView = [[BottomSection alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 50)];
+  // 5. Bottom Section Slot (Pinned directly to the bottom edge)
+  self.bottomControlView = [[BottomSection alloc] initWithFrame:CGRectZero];
   self.bottomControlView.delegate = self;
   self.bottomControlView.translatesAutoresizingMaskIntoConstraints = NO;
-  [self.stackView addArrangedSubview:self.bottomControlView];
+  [self.controlsContainerView addSubview:self.bottomControlView];
   [NSLayoutConstraint activateConstraints:@[
-    [self.bottomControlView.widthAnchor constraintEqualToAnchor:self.stackView.widthAnchor]
+    [self.bottomControlView.leadingAnchor constraintEqualToAnchor:self.controlsContainerView.leadingAnchor],
+    [self.bottomControlView.trailingAnchor constraintEqualToAnchor:self.controlsContainerView.trailingAnchor],
+    [self.bottomControlView.bottomAnchor constraintEqualToAnchor:self.controlsContainerView.bottomAnchor]
   ]];
 
-  // 6. Buffering Spinner
+  // 6. Buffering Spinner (Centered)
   self.bufferingSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleLarge];
   self.bufferingSpinner.color = UIColor.whiteColor;
   self.bufferingSpinner.hidesWhenStopped = YES;
@@ -255,12 +258,15 @@ private:
   if (self.playing) {
     [self.player pause];
     self.playing = NO;
-    [self.centerControlView setPlaying:NO];
+    [self.centerControlView setPlaying:NO isEnded:NO];
     [self invalidateAutoHideTimer];
   } else {
+    if (self.player.currentItem && CMTIME_COMPARE_INLINE(self.player.currentTime, >=, self.player.currentItem.duration)) {
+      [self.player seekToTime:kCMTimeZero toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+    }
     [self.player play];
     self.playing = YES;
-    [self.centerControlView setPlaying:YES];
+    [self.centerControlView setPlaying:YES isEnded:NO];
     [self scheduleAutoHideControls];
   }
 }
@@ -288,7 +294,7 @@ private:
   self.controlsVisible = YES;
 
   void (^showBlock)(void) = ^{
-    self.stackView.alpha = 1.0;
+    self.controlsContainerView.alpha = 1.0;
   };
 
   if (animated) {
@@ -307,7 +313,7 @@ private:
   self.controlsVisible = NO;
 
   void (^hideBlock)(void) = ^{
-    self.stackView.alpha = 0.0;
+    self.controlsContainerView.alpha = 0.0;
   };
 
   if (animated) {

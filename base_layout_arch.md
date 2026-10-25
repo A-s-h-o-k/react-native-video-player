@@ -125,15 +125,15 @@ sequenceDiagram
 | **Base Class** | `UIView` | `FrameLayout` |
 | **Sizing** | `translatesAutoresizingMaskIntoConstraints = NO`, pinned to container bounds | `match_parent` width and height |
 | **Timer Mechanism** | `NSTimer scheduledTimerWithTimeInterval:5.0` | `Handler(Looper.getMainLooper()).postDelayed(5000L)` |
-| **Fade Animation** | `[UIView animateWithDuration:0.25 animations:...]` | `animate().alpha(0.0f).setDuration(250).start()` |
+| **Fade Animation** | `[UIView animateWithDuration:0.25 animations:...]` on `controlsContainerView` | `animate().alpha(0.0f).setDuration(250).start()` |
 | **Gesture Handler** | `UITapGestureRecognizer` attached to background | `GestureDetector` / `setOnClickListener` |
-| **Child Slots** | `topSection`, `centerSection`, `bottomSection`, `spinner` | `topSection`, `centerSection`, `bottomSection`, `progressBar` |
+| **Child Slots** | `topControlView` (pinned to top), `centerControlView` (centered), `bottomControlView` (pinned to bottom), `bufferingSpinner` (centered) | `topSection` (`Gravity.TOP`), `centerSection` (`Gravity.CENTER`), `bottomSection` (`Gravity.BOTTOM`), `bufferingSpinner` (`Gravity.CENTER`) |
 | **Delegates** | Conforms to `TopSectionDelegate`, `CenterSectionDelegate`, `BottomSectionDelegate` | Implements `TopSectionListener`, `CenterSectionListener`, `BottomSectionListener` |
 
 ---
 
 ## 7. Implementation & Verification Status
 
-- [x] **iOS Master ControlLayer (`ControlLayer.mm`)**: Fully implemented and compiled into `Player.app` with `xcodebuild` (Exit code 0). Manages `CenterSection`, 5s auto-hide with pause immunity, and dispatches directly to `PlayerStateCoordinator`.
+- [x] **iOS Master ControlLayer (`ControlLayer.mm`)**: Fully implemented with direct AutoLayout constraints pinning `TopSection` to the top edge, `CenterSection` centered, and `BottomSection` to the bottom edge inside `controlsContainerView` (Android `FrameLayout` parity). Decoupled from automatic safe area margin expansion (`insetsLayoutMarginsFromSafeArea = NO` on `TopSection.mm`), ensuring controls sit flush at `y = 8pt` within the player bounds without being shifted by the Dynamic Island / status bar. Synchronized with `self.controlsLayer.frame = self.bounds` inside `layoutSubviews` in `RCTVideoPlayer.mm`. Verified with `xcodebuild` (Exit code 0) on iPhone 17 Pro.
 - [x] **Android Master ControlLayer (`ControlLayer.kt`)**: Fully implemented, mounted as overlay in `ReactVideoPlayer.kt`, and synchronized with `BasePlayer.kt` playback state callbacks.
 

@@ -11,30 +11,9 @@
 
 #ifdef __cplusplus
 #import "../../../cpp/PlayerStateCoordinator.hpp"
-#import "../../../cpp/IPlaybackEngineBridge.hpp"
 #endif
 
 NS_ASSUME_NONNULL_BEGIN
-
-#ifdef __cplusplus
-class AVPlayerBridgeImpl : public PlayerCore::IPlaybackEngineBridge {
-public:
-    AVPlayerBridgeImpl(AVPlayer *player);
-    virtual ~AVPlayerBridgeImpl() = default;
-
-    void setPlayer(AVPlayer * _Nullable player);
-
-    void executePlay() override;
-    void executePause() override;
-    void executeSeek(double seconds) override;
-    void executePlaybackRate(float rate) override;
-    void executeVolume(float volume) override;
-    void executeMute(bool muted) override;
-
-private:
-    __weak AVPlayer *player_;
-};
-#endif
 
 @class NetworkAuthManager;
 

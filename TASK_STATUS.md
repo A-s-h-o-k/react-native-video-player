@@ -14,12 +14,12 @@
 
 | Field | Current Details |
 | :--- | :--- |
-| **Current Task** | Android Build Toolchain Alignment (ndkVersion = 27.1.12297006 for RN 0.83 C++20 std::format support) & Build Verification |
+| **Current Task** | Cross-Platform Video ResizeMode & Aspect Ratio Prop (`contain`, `cover`, `stretch`) |
 | **Current Status** | `[COMPLETED]` |
-| **Primary Platforms** | Android / Android TV (`android/build.gradle`, `android/app/src/main/jni/CMakeLists.txt`, `PlayerStateCoordinatorJni.cpp`) |
-| **Target Files** | • [android/build.gradle](file:///Users/ashokammineni/video-player/new_2/Player/android/build.gradle)<br>• [android/app/src/main/jni/CMakeLists.txt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/jni/CMakeLists.txt)<br>• [PlayerStateCoordinatorJni.cpp](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/jni/PlayerStateCoordinatorJni.cpp)<br>• [TASK_STATUS.md](file:///Users/ashokammineni/video-player/new_2/Player/TASK_STATUS.md) |
-| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [core_player_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/core_player_arch.md)<br>• [network_auth_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/network_auth_arch.md) |
-| **Acceptance Criteria** | 1. `ndkVersion` aligned to 27.1.12297006 with LLVM 18 libc++ C++20 std::format support.<br>2. CMakeLists.txt deduplicates JNI source compilation and links `log`.<br>3. Successful Gradle build with zero compiler errors across all 4 ABIs (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`). |
+| **Primary Platforms** | iOS / tvOS, Android / Android TV (`specs/`, `src/index.tsx`, `RCTVideoPlayer.mm`, `BasePlayer.kt`, `ReactVideoPlayer.kt`, `ReactVideoPlayerManager.kt`) |
+| **Target Files** | • [specs/VideoPlayerNativeComponent.ts](file:///Users/ashokammineni/video-player/new_2/Player/specs/VideoPlayerNativeComponent.ts)<br>• [src/index.tsx](file:///Users/ashokammineni/video-player/new_2/Player/src/index.tsx)<br>• [RCTVideoPlayer.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/RCTVideoPlayer.mm)<br>• [BasePlayer.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/videoplayer/BasePlayer.kt)<br>• [ReactVideoPlayer.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ReactVideoPlayer.kt)<br>• [ReactVideoPlayerManager.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ReactVideoPlayerManager.kt)<br>• [TASK_STATUS.md](file:///Users/ashokammineni/video-player/new_2/Player/TASK_STATUS.md) |
+| **Related Architecture Docs** | • [core_player_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/core_player_arch.md)<br>• [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md) |
+| **Acceptance Criteria** | 1. Expose `resizeMode?: string` in `specs/VideoPlayerNativeComponent.ts` and `resizeMode?: 'contain' | 'cover' | 'stretch'` + `aspectRatio?: number | string` in `src/index.tsx`.<br>2. Map `resizeMode` in iOS `RCTVideoPlayer.mm` to `AVLayerVideoGravityResizeAspect`, `AVLayerVideoGravityResizeAspectFill`, and `AVLayerVideoGravityResize`.<br>3. Map `resizeMode` in Android `BasePlayer.kt` to `RESIZE_MODE_FIT`, `RESIZE_MODE_ZOOM`, and `RESIZE_MODE_FILL`.<br>4. Center `PlayerView` with black letterbox background on Android to match iOS.<br>5. Verified compilation on both platforms (`xcodebuild` exit 0, `./gradlew assembleDebug` exit 0). |
 
 ---
 
@@ -45,7 +45,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **CommonButton** | iOS / tvOS | [CommonButton.m](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Common/CommonButton.m) | `[COMPLETED]` | 44×44pt minimum hit target, spring micro-interactions, tvOS focus. |
 | **CommonButton** | Android / TV | [CommonButton.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/common/CommonButton.kt) | `[COMPLETED]` | 48×48dp minimum hit target, Material ripple, Android TV focus highlight. |
-| **ControlLayer (Overlay Container)** | iOS / tvOS | [ControlLayer.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/ControlLayer.mm) | `[COMPLETED]` | Full-bleed overlay, 5s auto-hide with pause and scrub immunity, C++ observer hookup. |
+| **ControlLayer (Overlay Container)** | iOS / tvOS | [ControlLayer.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/ControlLayer.mm) | `[COMPLETED]` | Full-bleed overlay with direct top/center/bottom AutoLayout pinning (Android FrameLayout parity), 5s auto-hide with pause and scrub immunity, C++ observer hookup. |
 | **ControlLayer (Overlay Container)** | Android / TV | [ControlLayer.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/ControlLayer.kt) | `[COMPLETED]` | FrameLayout overlay, 5s auto-hide with pause and scrub immunity, wired to C++ coordinator via JNI. |
 
 ### C. Control Sections
@@ -55,14 +55,14 @@
 | **CenterSection** | Android / TV | [CenterSection.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/sections/CenterSection.kt) | `[COMPLETED]` | Rewind 15s, Play/Pause toggle, Forward 15s; wired via `CenterSectionListener`. |
 | **BottomSection** | iOS / tvOS | [BottomSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/BottomSection/BottomSection.mm) | `[COMPLETED]` | Full timeline with monospaced time labels, 60fps scrub binding to coordinator, fullscreen toggle. |
 | **BottomSection** | Android / TV | [BottomSection.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/sections/BottomSection.kt) | `[COMPLETED]` | Full timeline with monospaced time labels, 60fps 3-phase C++ scrub binding, fullscreen toggle, auto-hide immunity. |
-| **TopSection** | iOS / tvOS | [TopSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/TopSection/TopSection.mm) | `[COMPLETED]` | Back button, title label, captions & settings actions; wired via `TopSectionDelegate`. |
+| **TopSection** | iOS / tvOS | [TopSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/TopSection/TopSection.mm) | `[COMPLETED]` | Back button, title label, captions & settings actions; detached from safe area margins via `insetsLayoutMarginsFromSafeArea = NO` for flush top alignment; wired via `TopSectionDelegate`. |
 | **TopSection** | Android / TV | [TopSection.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/sections/TopSection.kt) | `[COMPLETED]` | Back button, title label, captions & settings actions; wired via `TopSectionListener`. |
 
 ### D. Platform Native Adapters & Roots
 | Component | Platform | Files | Status | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **AVPlayerAdapter** | iOS / tvOS | [AVPlayerAdapter.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Core/AVPlayerAdapter.mm) | `[COMPLETED]` | Binds AVPlayer KVO & periodic time observer to coordinator. |
-| **RCTVideoPlayer** | iOS / tvOS | [RCTVideoPlayer.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/RCTVideoPlayer.mm) | `[COMPLETED]` | Root Fabric view instantiating coordinator, AVPlayerLayer, and ControlLayer. |
+| **AVPlayerAdapter** | iOS / tvOS | [AVPlayerAdapter.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Core/AVPlayerAdapter.mm) | `[COMPLETED]` | Binds AVPlayer KVO & periodic time observer to coordinator; includes in-place `AVPlayerAdapterBridge`, idempotent cleanup, and `self.observedItem` tracking. |
+| **RCTVideoPlayer** | iOS / tvOS | [RCTVideoPlayer.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/RCTVideoPlayer.mm) | `[COMPLETED]` | Root Fabric view instantiating coordinator, AVPlayerLayer, and ControlLayer; clean teardown disconnecting `playerLayer.player`. |
 | **BasePlayer** | Android / TV | [BasePlayer.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/videoplayer/BasePlayer.kt) | `[COMPLETED]` | Media3 ExoPlayer wrapper with `onPlaybackStateListener`. |
 | **ReactVideoPlayer** | Android / TV | [ReactVideoPlayer.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ReactVideoPlayer.kt) | `[COMPLETED]` | Root FrameLayout mounting `PlayerView`, `ControlLayer`, and `PlayerStateCoordinator` via JNI. |
 

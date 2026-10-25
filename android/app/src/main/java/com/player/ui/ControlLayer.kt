@@ -8,6 +8,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ProgressBar
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.player.ui.sections.BottomSection
 import com.player.ui.sections.BottomSectionListener
@@ -25,6 +26,8 @@ class ControlLayer @JvmOverloads constructor(
     var player: ExoPlayer? = null
     var coordinator: com.player.core.PlayerStateCoordinator? = null
     var isPlaying: Boolean = false
+        private set
+    var isEnded: Boolean = false
         private set
 
     val topSection: TopSection
@@ -110,9 +113,10 @@ class ControlLayer @JvmOverloads constructor(
         centerSection.setPlaying(exoPlayer.isPlaying)
     }
 
-    fun setPlaying(playing: Boolean) {
+    fun setPlaying(playing: Boolean, isEnded: Boolean = false) {
         this.isPlaying = playing
-        centerSection.setPlaying(playing)
+        this.isEnded = isEnded
+        centerSection.setPlaying(playing, isEnded)
         if (playing) {
             startTimeUpdates()
             resetAutoHideTimer()
@@ -164,6 +168,9 @@ class ControlLayer @JvmOverloads constructor(
         if (p.isPlaying) {
             p.pause()
         } else {
+            if (p.playbackState == Player.STATE_ENDED || (p.duration > 0 && p.currentPosition >= p.duration)) {
+                p.seekTo(0L)
+            }
             p.play()
         }
     }

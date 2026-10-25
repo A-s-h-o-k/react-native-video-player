@@ -65,6 +65,11 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
 
     }
 
+    @ReactProp(name = "resizeMode")
+    override fun setResizeMode(view: ReactVideoPlayer, mode: String?) {
+        view.setResizeMode(mode)
+    }
+
 
     override fun getExportedCustomBubblingEventTypeConstants(): Map<String, Any> =
         mapOf(

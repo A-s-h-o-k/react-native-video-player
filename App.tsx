@@ -56,6 +56,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignContent: 'center',
     width: '100%',
+    marginTop: 200
   },
   videoContainer: {
     flex: 1,

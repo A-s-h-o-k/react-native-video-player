@@ -9,6 +9,7 @@
 
 @interface CenterSection ()
 @property (nonatomic, assign) BOOL isPlayingState;
+@property (nonatomic, assign) BOOL isEndedState;
 @end
 
 @implementation CenterSection
@@ -67,15 +68,27 @@
   [self addArrangedSubview:self.forwardButton];
 }
 
-- (void)setPlaying:(BOOL)playing {
+- (void)setPlaying:(BOOL)playing isEnded:(BOOL)ended {
   _isPlayingState = playing;
-  if (playing) {
+  _isEndedState = ended;
+  if (ended) {
+    [self.playButton setSystemIcon:@"arrow.counterclockwise" pointSize:30 weight:UIImageSymbolWeightBold];
+    [self.playButton configureAccessibilityWithLabel:@"Replay" hint:@"Replays video from the beginning"];
+  } else if (playing) {
     [self.playButton setSystemIcon:@"pause.fill" pointSize:32 weight:UIImageSymbolWeightBold];
     [self.playButton configureAccessibilityWithLabel:@"Pause" hint:@"Pauses video playback"];
   } else {
     [self.playButton setSystemIcon:@"play.fill" pointSize:32 weight:UIImageSymbolWeightBold];
     [self.playButton configureAccessibilityWithLabel:@"Play" hint:@"Resumes video playback"];
   }
+}
+
+- (void)setPlaying:(BOOL)playing {
+  [self setPlaying:playing isEnded:NO];
+}
+
+- (void)setPlaybackEnded:(BOOL)ended {
+  [self setPlaying:NO isEnded:ended];
 }
 
 @end

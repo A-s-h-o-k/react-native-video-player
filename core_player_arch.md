@@ -177,13 +177,24 @@ public:
 
 ### iOS / tvOS (`AVPlayerAdapter`)
 - Wraps an `AVPlayer` and `AVPlayerItem`.
+- **Engine Command Execution**: Implements `IPlaybackEngineBridge` via an in-place private value struct `AVPlayerAdapterBridge`, avoiding external heap bridge allocations and fragile weak pointer synchronization.
 - **State Listening**: Uses Key-Value Observing (KVO) on `player.timeControlStatus` (`paused`, `waitingToPlayAtSpecifiedRate`, `playing`).
 - **Timing**: Adds an `addPeriodicTimeObserverForInterval:queue:usingBlock:` on the main dispatch queue (e.g. interval of `CMTimeMake(1, 4)` = 4 updates per second).
 - **Duration**: Observes `currentItem.duration` via KVO on `AVPlayerItemStatusReadyToPlay`.
-- **End Notification**: Subscribes to `AVPlayerItemDidPlayToEndTimeNotification`.
+- **End Notification**: Subscribes to `AVPlayerItemDidPlayToEndTimeNotification` on the exact `observedItem`.
+- **Safe Teardown & View Recycling**: Idempotent `cleanup` method with `_isCleanedUp` guard preventing double-teardown when views are recycled or deallocated. Fabric `prepareForRecycle` resets cached props to `defaultProps` so recycled views reload when re-attached.
+- **Observer Attachment Sequence**: In `loadURL:`, `attachItemObservers:` executes strictly *after* `attachPlayer:` / `replaceCurrentItemWithPlayerItem:` to ensure player attachment teardown does not inadvertently strip fresh item observers.
+- **Aspect Ratio & Resize Modes**: Maps `resizeMode` prop to `AVPlayerLayer.videoGravity`:
+  - `"contain"` $\rightarrow$ `AVLayerVideoGravityResizeAspect` (fit inside frame, centered with black letterbox bars).
+  - `"cover"` $\rightarrow$ `AVLayerVideoGravityResizeAspectFill` (crop to fill entire frame).
+  - `"stretch"` $\rightarrow$ `AVLayerVideoGravityResize` (stretch to fit frame).
 
-### Android / Android TV (`ExoPlayerAdapter`)
-- Wraps an `androidx.media3.exoplayer.ExoPlayer`.
+### Android / Android TV (`ExoPlayerAdapter` / `BasePlayer`)
+- Wraps an `androidx.media3.exoplayer.ExoPlayer` and `androidx.media3.ui.PlayerView`.
+- **Aspect Ratio & Resize Modes**: Maps `resizeMode` prop to `PlayerView.resizeMode`:
+  - `"contain"` $\rightarrow$ `AspectRatioFrameLayout.RESIZE_MODE_FIT` (centered with black background letterbox bars).
+  - `"cover"` $\rightarrow$ `AspectRatioFrameLayout.RESIZE_MODE_ZOOM` (fill entire frame, crop overflow).
+  - `"stretch"` $\rightarrow$ `AspectRatioFrameLayout.RESIZE_MODE_FILL` (stretch to fit frame).
 - **State Listening**: Uses `Player.Listener`:
   - `onPlaybackStateChanged(state)`: Maps `STATE_IDLE`, `STATE_BUFFERING`, `STATE_READY`, `STATE_ENDED`.
   - `onIsPlayingChanged(isPlaying)`: Dispatches `PLAYING` or `PAUSED`.

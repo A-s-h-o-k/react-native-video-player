@@ -24,8 +24,21 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
 
     var onPlaybackStateListener: ((state: Int, isPlaying: Boolean) -> Unit)? = null
 
+    init {
+        this.playerView.setBackgroundColor(android.graphics.Color.BLACK)
+    }
+
     fun configureNetwork(headers: Map<String, String>?, drmConfig: DrmConfig?) {
         networkAuthManager.configure(headers, drmConfig)
+    }
+
+    @OptIn(UnstableApi::class)
+    fun setResizeMode(mode: String?) {
+        when (mode?.lowercase()) {
+            "cover" -> this.playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            "stretch" -> this.playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+            else -> this.playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }
     }
 
     @OptIn(UnstableApi::class)
@@ -36,7 +49,6 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
         this.player.playWhenReady = this.play;
         this.playerView.player = this.player
         this.playerView.useController = false
-        this.playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
         this.player.addListener(object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
 

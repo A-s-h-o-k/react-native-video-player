@@ -63,7 +63,7 @@ using namespace facebook::react;
   const auto &newViewProps = *std::static_pointer_cast<VideoPlayerProps const>(props);
 
   // 1. Headers Update
-  if (oldViewProps.headers != newViewProps.headers) {
+  if (oldViewProps.headers != newViewProps.headers || !self.headers) {
     if (!newViewProps.headers.empty()) {
       NSData *data = [NSData dataWithBytes:newViewProps.headers.data() length:newViewProps.headers.size()];
       id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -73,13 +73,10 @@ using namespace facebook::react;
     } else {
       self.headers = nil;
     }
-    if (self.adapter) {
-      [self.adapter configureHeaders:self.headers drmConfig:self.drmConfig];
-    }
   }
 
   // 2. DRM Config Update
-  if (oldViewProps.drm != newViewProps.drm) {
+  if (oldViewProps.drm != newViewProps.drm || !self.drmConfig) {
     if (!newViewProps.drm.empty()) {
       NSData *data = [NSData dataWithBytes:newViewProps.drm.data() length:newViewProps.drm.size()];
       id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -89,23 +86,25 @@ using namespace facebook::react;
     } else {
       self.drmConfig = nil;
     }
-    if (self.adapter) {
-      [self.adapter configureHeaders:self.headers drmConfig:self.drmConfig];
-    }
   }
 
-  // 3. Video URL Update
-  if (oldViewProps.videoUrl != newViewProps.videoUrl && !newViewProps.videoUrl.empty()) {
+  // 3. Video URL Update - reload if player is nil (e.g., after unmount / recycle) or URL changed
+  BOOL needsLoadVideo = (!self.player || oldViewProps.videoUrl != newViewProps.videoUrl) && !newViewProps.videoUrl.empty();
+  if (needsLoadVideo) {
     NSString *urlStr = [NSString stringWithUTF8String:newViewProps.videoUrl.c_str()];
     [self loadVideoURLString:urlStr];
+  } else if (self.adapter) {
+    [self.adapter configureHeaders:self.headers drmConfig:self.drmConfig];
   }
 
   // 4. Play / Pause prop
-  if (oldViewProps.play != newViewProps.play && _coordinator) {
-    if (newViewProps.play) {
-      _coordinator->requestPlay();
-    } else {
-      _coordinator->requestPause();
+  if (_coordinator) {
+    if (oldViewProps.play != newViewProps.play || needsLoadVideo) {
+      if (newViewProps.play) {
+        _coordinator->requestPlay();
+      } else {
+        _coordinator->requestPause();
+      }
     }
   }
 
@@ -115,16 +114,27 @@ using namespace facebook::react;
   }
 
   // 6. Video Title Update
-  if (oldViewProps.title != newViewProps.title && self.controlsLayer) {
+  if (self.controlsLayer && (oldViewProps.title != newViewProps.title || needsLoadVideo)) {
     NSString *titleStr = [NSString stringWithUTF8String:newViewProps.title.c_str()];
     [self.controlsLayer setTitle:titleStr];
+  }
+
+  // 7. Video Gravity / ResizeMode Update
+  if (oldViewProps.resizeMode != newViewProps.resizeMode || needsLoadVideo) {
+    if (newViewProps.resizeMode == "cover") {
+      self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    } else if (newViewProps.resizeMode == "stretch") {
+      self.playerLayer.videoGravity = AVLayerVideoGravityResize;
+    } else {
+      self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+    }
   }
 
   [super updateProps:props oldProps:oldProps];
 }
 
 - (void)loadVideoURLString:(NSString *)urlString {
-  if ([_currentVideoUrl isEqualToString:urlString]) {
+  if ([_currentVideoUrl isEqualToString:urlString] && self.player != nil) {
     return;
   }
   _currentVideoUrl = [urlString copy];
@@ -147,8 +157,16 @@ using namespace facebook::react;
 
   // 2. Video Render Surface (AVPlayerLayer)
   self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
-  self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+  const auto &props = *std::static_pointer_cast<VideoPlayerProps const>(_props);
+  if (props.resizeMode == "cover") {
+    self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+  } else if (props.resizeMode == "stretch") {
+    self.playerLayer.videoGravity = AVLayerVideoGravityResize;
+  } else {
+    self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+  }
   self.playerLayer.zPosition = 0;
+  self.playerLayer.frame = self.bounds;
   [self.layer addSublayer:self.playerLayer];
 
   // 3. Control Overlay Layer
@@ -165,7 +183,6 @@ using namespace facebook::react;
     [self.controlsLayer.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
   ]];
 
-  const auto &props = *std::static_pointer_cast<VideoPlayerProps const>(_props);
   if (!props.title.empty()) {
     [self.controlsLayer setTitle:[NSString stringWithUTF8String:props.title.c_str()]];
   }
@@ -190,6 +207,7 @@ using namespace facebook::react;
 - (void)layoutSubviews {
   [super layoutSubviews];
   self.playerLayer.frame = self.bounds;
+  self.controlsLayer.frame = self.bounds;
 }
 
 - (void)cleanup {
@@ -205,11 +223,15 @@ using namespace facebook::react;
   }
 
   if (self.playerLayer) {
+    self.playerLayer.player = nil;
     [self.playerLayer removeFromSuperlayer];
     self.playerLayer = nil;
   }
 
-  self.player = nil;
+  if (self.player) {
+    [self.player pause];
+    self.player = nil;
+  }
   _coordinator = nullptr;
 }
 
@@ -217,6 +239,10 @@ using namespace facebook::react;
   [super prepareForRecycle];
   [self cleanup];
   _currentVideoUrl = nil;
+  self.headers = nil;
+  self.drmConfig = nil;
+  static const auto defaultProps = std::make_shared<const VideoPlayerProps>();
+  _props = defaultProps;
 }
 
 - (void)dealloc {

@@ -24,7 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL playing;
 @property (nonatomic, strong, nullable) AVPlayer *player;
 
-@property (nonatomic, strong) UIStackView *stackView;
+@property (nonatomic, strong) UIView *controlsContainerView;
+@property (nonatomic, strong) UIView *stackView;
 @property (nonatomic, strong) TopSection *topControlView;
 @property (nonatomic, strong) CenterSection *centerControlView;
 @property (nonatomic, strong) BottomSection *bottomControlView;

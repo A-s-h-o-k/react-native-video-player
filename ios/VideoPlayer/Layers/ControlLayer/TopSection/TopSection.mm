@@ -24,6 +24,7 @@
     self.distribution = UIStackViewDistributionFill;
     self.spacing = 12.0;
     self.translatesAutoresizingMaskIntoConstraints = NO;
+    self.insetsLayoutMarginsFromSafeArea = NO;
     self.layoutMargins = UIEdgeInsetsMake(8.0, 16.0, 8.0, 16.0);
     self.layoutMarginsRelativeArrangement = YES;
 

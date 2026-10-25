@@ -29,6 +29,12 @@ NS_ASSUME_NONNULL_BEGIN
 /** Updates play/pause button icon and accessibility label */
 - (void)setPlaying:(BOOL)playing;
 
+/** Updates center button with explicit playback and ended states */
+- (void)setPlaying:(BOOL)playing isEnded:(BOOL)ended;
+
+/** Updates center button to replay icon when playback ends */
+- (void)setPlaybackEnded:(BOOL)ended;
+
 - (instancetype)initWithFrame:(CGRect)frame;
 
 @end

@@ -24,6 +24,7 @@ export interface NativeProps extends ViewProps {
   iconSize?: Int32;
   headers?: string;
   drm?: string;
+  resizeMode?: string;
 }
 
 export default codegenNativeComponent<NativeProps>(

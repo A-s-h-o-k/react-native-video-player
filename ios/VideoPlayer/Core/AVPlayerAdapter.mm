@@ -7,65 +7,68 @@
 
 #import "AVPlayerAdapter.h"
 #import "../Network/NetworkAuthManager.h"
+#import "../../../cpp/IPlaybackEngineBridge.hpp"
 
 static void *AVPlayerAdapterKVOContext = &AVPlayerAdapterKVOContext;
 
-#pragma mark - C++ Bridge Implementation
+#pragma mark - C++ Engine Bridge Implementation
 
-AVPlayerBridgeImpl::AVPlayerBridgeImpl(AVPlayer *player) : player_(player) {}
+struct AVPlayerAdapterBridge : public PlayerCore::IPlaybackEngineBridge {
+    __weak AVPlayerAdapter *adapter;
 
-void AVPlayerBridgeImpl::setPlayer(AVPlayer *player) {
-    player_ = player;
-}
+    AVPlayerAdapterBridge(AVPlayerAdapter *a = nil) : adapter(a) {}
 
-void AVPlayerBridgeImpl::executePlay() {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [player_ play];
-    });
-}
+    void executePlay() override {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [adapter.player play];
+        });
+    }
 
-void AVPlayerBridgeImpl::executePause() {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [player_ pause];
-    });
-}
+    void executePause() override {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [adapter.player pause];
+        });
+    }
 
-void AVPlayerBridgeImpl::executeSeek(double seconds) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        CMTime target = CMTimeMakeWithSeconds(seconds, NSEC_PER_SEC);
-        [player_ seekToTime:target toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
-    });
-}
+    void executeSeek(double seconds) override {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            CMTime target = CMTimeMakeWithSeconds(seconds, NSEC_PER_SEC);
+            [adapter.player seekToTime:target toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+        });
+    }
 
-void AVPlayerBridgeImpl::executePlaybackRate(float rate) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        player_.rate = rate;
-    });
-}
+    void executePlaybackRate(float rate) override {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            adapter.player.rate = rate;
+        });
+    }
 
-void AVPlayerBridgeImpl::executeVolume(float volume) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        player_.volume = volume;
-    });
-}
+    void executeVolume(float volume) override {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            adapter.player.volume = volume;
+        });
+    }
 
-void AVPlayerBridgeImpl::executeMute(bool muted) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        player_.muted = muted;
-    });
-}
+    void executeMute(bool muted) override {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            adapter.player.muted = muted;
+        });
+    }
+};
 
 #pragma mark - Objective-C++ Adapter Implementation
 
 @interface AVPlayerAdapter () {
     PlayerCore::PlayerStateCoordinator *_coordinator;
-    std::unique_ptr<AVPlayerBridgeImpl> _bridge;
+    AVPlayerAdapterBridge _bridge;
 }
 @property (nonatomic, strong, readwrite, nullable) AVPlayer *player;
 @property (nonatomic, strong, readwrite) NetworkAuthManager *networkAuthManager;
+@property (nonatomic, strong, nullable) AVPlayerItem *observedItem;
 @property (nonatomic, strong, nullable) id timeObserverToken;
 @property (nonatomic, assign) BOOL isObservingItem;
 @property (nonatomic, assign) BOOL isObservingPlayer;
+@property (nonatomic, assign) BOOL isCleanedUp;
 @end
 
 @implementation AVPlayerAdapter
@@ -74,8 +77,8 @@ void AVPlayerBridgeImpl::executeMute(bool muted) {
     self = [super init];
     if (self) {
         _coordinator = coordinator;
-        _bridge = std::make_unique<AVPlayerBridgeImpl>(nil);
-        _coordinator->setEngineBridge(_bridge.get());
+        _bridge = AVPlayerAdapterBridge(self);
+        _coordinator->setEngineBridge(&_bridge);
         _networkAuthManager = [[NetworkAuthManager alloc] init];
     }
     return self;
@@ -90,7 +93,6 @@ void AVPlayerBridgeImpl::executeMute(bool muted) {
     [self detachPlayer];
 
     self.player = player;
-    _bridge->setPlayer(player);
 
     if (self.player) {
         [self.player addObserver:self
@@ -122,7 +124,6 @@ void AVPlayerBridgeImpl::executeMute(bool muted) {
 
     // Create item with injected headers, ResourceLoader interceptor, and FairPlay DRM session
     AVPlayerItem *item = [self.networkAuthManager createPlayerItemForURL:url];
-    [self attachItemObservers:item];
 
     if (!self.player) {
         AVPlayer *newPlayer = [AVPlayer playerWithPlayerItem:item];
@@ -130,10 +131,14 @@ void AVPlayerBridgeImpl::executeMute(bool muted) {
     } else {
         [self.player replaceCurrentItemWithPlayerItem:item];
     }
+
+    [self attachItemObservers:item];
 }
 
 - (void)attachItemObservers:(AVPlayerItem *)item {
     if (!item) { return; }
+    [self cleanupCurrentItemObservers];
+    self.observedItem = item;
 
     [item addObserver:self
            forKeyPath:@"status"
@@ -153,16 +158,17 @@ void AVPlayerBridgeImpl::executeMute(bool muted) {
 }
 
 - (void)cleanupCurrentItemObservers {
-    if (_isObservingItem && self.player.currentItem) {
+    if (_isObservingItem && self.observedItem) {
         @try {
-            [self.player.currentItem removeObserver:self forKeyPath:@"status" context:AVPlayerAdapterKVOContext];
-            [self.player.currentItem removeObserver:self forKeyPath:@"loadedTimeRanges" context:AVPlayerAdapterKVOContext];
+            [self.observedItem removeObserver:self forKeyPath:@"status" context:AVPlayerAdapterKVOContext];
+            [self.observedItem removeObserver:self forKeyPath:@"loadedTimeRanges" context:AVPlayerAdapterKVOContext];
         } @catch (NSException *exception) {
             // Observer was not registered
         }
         [[NSNotificationCenter defaultCenter] removeObserver:self
                                                         name:AVPlayerItemDidPlayToEndTimeNotification
-                                                      object:self.player.currentItem];
+                                                      object:self.observedItem];
+        self.observedItem = nil;
         _isObservingItem = NO;
     }
 }
@@ -184,7 +190,9 @@ void AVPlayerBridgeImpl::executeMute(bool muted) {
         self.timeObserverToken = nil;
     }
 
-    _bridge->setPlayer(nil);
+    if (self.player) {
+        [self.player pause];
+    }
     self.player = nil;
 }
 
@@ -205,9 +213,22 @@ void AVPlayerBridgeImpl::executeMute(bool muted) {
     if ([keyPath isEqualToString:@"timeControlStatus"]) {
         AVPlayerTimeControlStatus status = (AVPlayerTimeControlStatus)[change[NSKeyValueChangeNewKey] integerValue];
         switch (status) {
-            case AVPlayerTimeControlStatusPaused:
+            case AVPlayerTimeControlStatusPaused: {
+                if (_coordinator && _coordinator->getSnapshot().state == PlayerCore::PlaybackState::Ended) {
+                    return;
+                }
+                AVPlayerItem *currentItem = self.player.currentItem;
+                if (currentItem) {
+                    double currentSecs = CMTimeGetSeconds(self.player.currentTime);
+                    double durationSecs = CMTimeGetSeconds(currentItem.duration);
+                    if (!isnan(currentSecs) && !isnan(durationSecs) && durationSecs > 0.0 && currentSecs >= (durationSecs - 0.35)) {
+                        _coordinator->notifyEngineState(PlayerCore::PlaybackState::Ended);
+                        return;
+                    }
+                }
                 _coordinator->notifyEngineState(PlayerCore::PlaybackState::Paused);
                 break;
+            }
             case AVPlayerTimeControlStatusWaitingToPlayAtSpecifiedRate:
                 _coordinator->notifyEngineState(PlayerCore::PlaybackState::Buffering);
                 break;
@@ -248,18 +269,25 @@ void AVPlayerBridgeImpl::executeMute(bool muted) {
 }
 
 - (void)playerItemDidReachEnd:(NSNotification *)notification {
+    if (notification.object && self.player.currentItem && notification.object != self.player.currentItem) {
+        return;
+    }
     if (_coordinator) {
         _coordinator->notifyEngineState(PlayerCore::PlaybackState::Ended);
     }
 }
 
 - (void)cleanup {
+    if (_isCleanedUp) {
+        return;
+    }
+    _isCleanedUp = YES;
+
     [self detachPlayer];
     if (_coordinator) {
         _coordinator->setEngineBridge(nullptr);
         _coordinator = nullptr;
     }
-    _bridge = nullptr;
 }
 
 - (void)dealloc {

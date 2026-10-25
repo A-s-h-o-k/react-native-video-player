@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.Gravity
 import android.widget.LinearLayout
+import com.player.R
 import com.player.ui.common.CommonButton
 import com.player.ui.common.CommonButtonSize
 import com.player.ui.common.CommonButtonStyle
@@ -26,6 +27,7 @@ class CenterSection @JvmOverloads constructor(
 
     var listener: CenterSectionListener? = null
     private var isPlayingState: Boolean = false
+    private var isEndedState: Boolean = false
 
     init {
         orientation = HORIZONTAL
@@ -76,9 +78,17 @@ class CenterSection @JvmOverloads constructor(
         addView(forwardButton, mediumParams)
     }
 
-    fun setPlaying(playing: Boolean) {
+    fun setPlaybackEnded(ended: Boolean) {
+        setPlaying(playing = false, isEnded = ended)
+    }
+
+    fun setPlaying(playing: Boolean, isEnded: Boolean = false) {
         isPlayingState = playing
-        if (playing) {
+        isEndedState = isEnded
+        if (isEnded) {
+            playButton.setImageResource(R.drawable.ic_replay)
+            playButton.configureAccessibility("Replay", "Replays video from the beginning")
+        } else if (playing) {
             playButton.setImageResource(android.R.drawable.ic_media_pause)
             playButton.configureAccessibility("Pause", "Pauses video playback")
         } else {

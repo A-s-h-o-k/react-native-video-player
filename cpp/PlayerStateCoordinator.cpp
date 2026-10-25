@@ -93,11 +93,16 @@ PlayerSnapshot PlayerStateCoordinator::getSnapshot() const {
 
 void PlayerStateCoordinator::requestPlay() {
     IPlaybackEngineBridge* b = nullptr;
+    bool isEnded = false;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
+        isEnded = (snapshot_.state == PlaybackState::Ended);
         b = bridge_;
     }
     if (b) {
+        if (isEnded) {
+            b->executeSeek(0.0);
+        }
         b->executePlay();
     }
 }
@@ -115,15 +120,20 @@ void PlayerStateCoordinator::requestPause() {
 
 void PlayerStateCoordinator::requestTogglePlayPause() {
     bool isPlaying = false;
+    bool isEnded = false;
     IPlaybackEngineBridge* b = nullptr;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         isPlaying = (snapshot_.state == PlaybackState::Playing);
+        isEnded = (snapshot_.state == PlaybackState::Ended);
         b = bridge_;
     }
     if (b) {
         if (isPlaying) {
             b->executePause();
+        } else if (isEnded) {
+            b->executeSeek(0.0);
+            b->executePlay();
         } else {
             b->executePlay();
         }
@@ -133,6 +143,9 @@ void PlayerStateCoordinator::requestTogglePlayPause() {
 void PlayerStateCoordinator::requestSeek(double seconds) {
     IPlaybackEngineBridge* b = nullptr;
     double clamped = 0.0;
+    std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
+    PlaybackState oldState = PlaybackState::Idle;
+    bool stateChanged = false;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         double dur = snapshot_.duration;
@@ -141,7 +154,18 @@ void PlayerStateCoordinator::requestSeek(double seconds) {
             clamped = std::min(clamped, dur);
         }
         snapshot_.currentTime = clamped;
+        if (snapshot_.state == PlaybackState::Ended && clamped < dur) {
+            oldState = snapshot_.state;
+            snapshot_.state = PlaybackState::Paused;
+            stateChanged = true;
+            observersCopy = getActiveObserversLocked();
+        }
         b = bridge_;
+    }
+    if (stateChanged) {
+        for (const auto& obs : observersCopy) {
+            obs->onStateChanged(PlaybackState::Paused, oldState);
+        }
     }
     if (b) {
         b->executeSeek(clamped);
@@ -190,6 +214,9 @@ void PlayerStateCoordinator::endScrubbing(double finalSeconds) {
     IPlaybackEngineBridge* b = nullptr;
     bool shouldResume = false;
     double clamped = 0.0;
+    std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
+    PlaybackState oldState = PlaybackState::Idle;
+    bool stateChanged = false;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         snapshot_.isScrubbing = false;
@@ -200,7 +227,18 @@ void PlayerStateCoordinator::endScrubbing(double finalSeconds) {
         }
         snapshot_.currentTime = clamped;
         shouldResume = wasPlayingBeforeScrub_;
+        if (snapshot_.state == PlaybackState::Ended && clamped < dur) {
+            oldState = snapshot_.state;
+            snapshot_.state = PlaybackState::Paused;
+            stateChanged = true;
+            observersCopy = getActiveObserversLocked();
+        }
         b = bridge_;
+    }
+    if (stateChanged) {
+        for (const auto& obs : observersCopy) {
+            obs->onStateChanged(PlaybackState::Paused, oldState);
+        }
     }
     if (b) {
         b->executeSeek(clamped);
@@ -275,6 +313,10 @@ void PlayerStateCoordinator::notifyEngineState(PlaybackState state) {
         if (snapshot_.state == state) {
             return;
         }
+        // Protect Ended state: do not allow engine Paused to overwrite Ended
+        if (state == PlaybackState::Paused && snapshot_.state == PlaybackState::Ended) {
+            return;
+        }
         oldState = snapshot_.state;
         snapshot_.state = state;
         observersCopy = getActiveObserversLocked();
@@ -287,6 +329,8 @@ void PlayerStateCoordinator::notifyEngineState(PlaybackState state) {
 void PlayerStateCoordinator::notifyEngineTime(double currentTime) {
     std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
     double duration = 0.0;
+    PlaybackState oldState = PlaybackState::Idle;
+    bool transitionedToEnded = false;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         // If user is actively dragging the scrubber, ignore engine time updates to prevent jitter
@@ -295,7 +339,20 @@ void PlayerStateCoordinator::notifyEngineTime(double currentTime) {
         }
         snapshot_.currentTime = currentTime;
         duration = snapshot_.duration;
+
+        // Auto-detect ended state when media clock reaches or passes the duration threshold
+        if (duration > 0.0 && !std::isnan(duration) && currentTime >= (duration - 0.35) &&
+            snapshot_.state != PlaybackState::Ended && snapshot_.state != PlaybackState::Idle && snapshot_.state != PlaybackState::Loading) {
+            oldState = snapshot_.state;
+            snapshot_.state = PlaybackState::Ended;
+            transitionedToEnded = true;
+        }
         observersCopy = getActiveObserversLocked();
+    }
+    if (transitionedToEnded) {
+        for (const auto& obs : observersCopy) {
+            obs->onStateChanged(PlaybackState::Ended, oldState);
+        }
     }
     for (const auto& obs : observersCopy) {
         obs->onTimeUpdated(currentTime, duration);

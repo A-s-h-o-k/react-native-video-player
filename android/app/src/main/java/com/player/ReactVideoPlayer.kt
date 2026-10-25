@@ -36,9 +36,10 @@ class ReactVideoPlayer : FrameLayout {
     }
 
     private fun configureComponent() {
+        this.setBackgroundColor(android.graphics.Color.BLACK)
         this.playerRef = BasePlayer(this.context, false, this.videoUrl)
-        // Make the PlayerView fill the entire FrameLayout (ReactVideoPlayer)
-        val layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        // Make the PlayerView fill the entire FrameLayout (ReactVideoPlayer) and center it
+        val layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT, android.view.Gravity.CENTER)
         this.addView(playerRef.playerView, layoutParams)
 
         // 1. Create ControlLayer
@@ -74,7 +75,10 @@ class ReactVideoPlayer : FrameLayout {
         val stateObserver = object : PlayerStateObserver {
             override fun onStateChanged(newState: PlaybackState, oldState: PlaybackState) {
                 post {
-                    controlLayer.setPlaying(newState == PlaybackState.Playing)
+                    controlLayer.setPlaying(
+                        playing = (newState == PlaybackState.Playing),
+                        isEnded = (newState == PlaybackState.Ended)
+                    )
                     controlLayer.setBuffering(newState == PlaybackState.Buffering)
                 }
             }
@@ -200,6 +204,10 @@ class ReactVideoPlayer : FrameLayout {
 
     fun setTitle(title: String) {
         controlLayer.setTitle(title)
+    }
+
+    fun setResizeMode(mode: String?) {
+        playerRef.setResizeMode(mode)
     }
 
     fun playVideo() {
