@@ -9,25 +9,28 @@ import com.facebook.react.uimanager.ViewManager
 
 class ReactVideoPlayerPackage : BaseReactPackage() {
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
-        return listOf(ReactVideoPlayerManager(reactContext))
+        return listOf(
+            ReactVideoPlayerManager(reactContext)
+        )
     }
 
-    override fun getModule(s: String, reactApplicationContext: ReactApplicationContext): NativeModule? {
-        when (s) {
-            ReactVideoPlayerManager.REACT_CLASS -> ReactVideoPlayerManager(reactApplicationContext)
+    override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
+        when (name) {
+            ReactVideoPlayerManager.REACT_CLASS -> ReactVideoPlayerManager(reactContext)
         }
         return null
     }
 
     override fun getReactModuleInfoProvider(): ReactModuleInfoProvider = ReactModuleInfoProvider {
-        mapOf(ReactVideoPlayerManager.REACT_CLASS to ReactModuleInfo(
-            name = ReactVideoPlayerManager.REACT_CLASS,
-            className = ReactVideoPlayerManager.REACT_CLASS,
-            canOverrideExistingModule = false,
-            needsEagerInit = false,
-            isCxxModule = false,
-            isTurboModule = true,
-        )
+        mapOf(
+            ReactVideoPlayerManager.REACT_CLASS to ReactModuleInfo(
+                name = ReactVideoPlayerManager.REACT_CLASS,
+                className = ReactVideoPlayerManager.REACT_CLASS,
+                canOverrideExistingModule = false,
+                needsEagerInit = false,
+                isCxxModule = false,
+                isTurboModule = true,
+            )
         )
     }
 }

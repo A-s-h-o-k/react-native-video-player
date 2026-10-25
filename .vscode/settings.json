@@ -1,0 +1,6 @@
+{
+    "java.configuration.updateBuildConfiguration": "disabled",
+    "java.project.sourcePaths": [
+        "ios/Player.xcworkspace"
+    ]
+}

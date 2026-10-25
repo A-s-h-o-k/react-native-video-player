@@ -7,10 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0C80B921A6F3F58F76C31292 /* libPods-Player.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-Player.a */; };
+		0CF8038BF582E7C3B9574A45 /* libPods-Player.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 87D197E4775130520D13CC75 /* libPods-Player.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		250543AA2FB08A75009C2C03 /* BottomSection.mm in Sources */ = {isa = PBXBuildFile; fileRef = 250543A92FB08A75009C2C03 /* BottomSection.mm */; };
 		25483ECF2EFD43B100104BC5 /* ControlLayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25483ECE2EFD43B100104BC5 /* ControlLayer.mm */; };
-		25688DEE2EFF18ED00E61244 /* EventManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 25688DED2EFF18ED00E61244 /* EventManager.m */; };
+		255776A82F12769600D9DD18 /* CommonButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 255776A72F12769600D9DD18 /* CommonButton.m */; };
+		2557C6F12F343C0800BCF74C /* CenterSection.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2557C6F02F343C0800BCF74C /* CenterSection.mm */; };
+		25688DEE2EFF18ED00E61244 /* EventManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25688DED2EFF18ED00E61244 /* EventManager.cpp */; };
+		25688DF02EFF200000E61244 /* PlayerStateCoordinator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25688DEF2EFF200000E61244 /* PlayerStateCoordinator.cpp */; };
+		25688DF22EFF200000E61244 /* AVPlayerAdapter.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25688DF12EFF200000E61244 /* AVPlayerAdapter.mm */; };
+		25A000012EFF300000A1B2C3 /* NetworkAuthManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */; };
+		25688DF42EFF200000E61244 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25688DF32EFF200000E61244 /* CoreMedia.framework */; };
+
+		257B98F22F32763F00CDD901 /* TopSection.mm in Sources */ = {isa = PBXBuildFile; fileRef = 257B98F12F32763F00CDD901 /* TopSection.mm */; };
 		2584BB2F2EF1D05A00C473C8 /* RCTVideoPlayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */; };
 		2584BB322EF1D2EF00C473C8 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */; };
 		6A4A24E34DE2DB930945705E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
@@ -23,20 +32,35 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Player/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Player/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = Player/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		229C3DC53F7B600D2CEB5A65 /* Pods-Player.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Player.release.xcconfig"; path = "Target Support Files/Pods-Player/Pods-Player.release.xcconfig"; sourceTree = "<group>"; };
+		250543A82FB08A57009C2C03 /* BottomSection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BottomSection.h; sourceTree = "<group>"; };
+		250543A92FB08A75009C2C03 /* BottomSection.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BottomSection.mm; sourceTree = "<group>"; };
 		25483ECD2EFD439900104BC5 /* ControlLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ControlLayer.h; sourceTree = "<group>"; };
 		25483ECE2EFD43B100104BC5 /* ControlLayer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ControlLayer.mm; sourceTree = "<group>"; };
-		25688DED2EFF18ED00E61244 /* EventManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = EventManager.m; sourceTree = "<group>"; };
+		255776A62F12768200D9DD18 /* CommonButton.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CommonButton.h; sourceTree = "<group>"; };
+		255776A72F12769600D9DD18 /* CommonButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CommonButton.m; sourceTree = "<group>"; };
+		2557C6F02F343C0800BCF74C /* CenterSection.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CenterSection.mm; sourceTree = "<group>"; };
+		2557C6F22F343C1F00BCF74C /* CenterSection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CenterSection.h; sourceTree = "<group>"; };
+		25688DED2EFF18ED00E61244 /* EventManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = EventManager.cpp; sourceTree = "<group>"; };
+		257B98F12F32763F00CDD901 /* TopSection.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TopSection.mm; sourceTree = "<group>"; };
+		257B98F32F327A6300CDD901 /* TopSection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TopSection.h; sourceTree = "<group>"; };
 		2584BB2D2EF1D05A00C473C8 /* Player-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Player-Bridging-Header.h"; sourceTree = "<group>"; };
 		2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RCTVideoPlayer.mm; sourceTree = "<group>"; };
 		2584BB302EF1D07000C473C8 /* RCTVideoPlayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCTVideoPlayer.h; sourceTree = "<group>"; };
 		2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
-		25DD7D882EF6C370009E0F50 /* EventManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EventManager.h; sourceTree = "<group>"; };
-		3B4392A12AC88292D35C810B /* Pods-Player.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Player.debug.xcconfig"; path = "Target Support Files/Pods-Player/Pods-Player.debug.xcconfig"; sourceTree = "<group>"; };
-		5709B34CF0A7D63546082F79 /* Pods-Player.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Player.release.xcconfig"; path = "Target Support Files/Pods-Player/Pods-Player.release.xcconfig"; sourceTree = "<group>"; };
-		5DCACB8F33CDC322A6C60F78 /* libPods-Player.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Player.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		25688DF32EFF200000E61244 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		25688DEF2EFF200000E61244 /* PlayerStateCoordinator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PlayerStateCoordinator.cpp; path = ../../cpp/PlayerStateCoordinator.cpp; sourceTree = "<group>"; };
+		25688DF12EFF200000E61244 /* AVPlayerAdapter.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = AVPlayerAdapter.mm; path = AVPlayerAdapter.mm; sourceTree = "<group>"; };
+		25688DF52EFF200000E61244 /* AVPlayerAdapter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AVPlayerAdapter.h; path = AVPlayerAdapter.h; sourceTree = "<group>"; };
+		25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = NetworkAuthManager.mm; path = NetworkAuthManager.mm; sourceTree = "<group>"; };
+		25A000032EFF300000A1B2C3 /* NetworkAuthManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = NetworkAuthManager.h; path = NetworkAuthManager.h; sourceTree = "<group>"; };
+
+		25DD7D882EF6C370009E0F50 /* EventManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = EventManager.hpp; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Player/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Player/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		87D197E4775130520D13CC75 /* libPods-Player.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Player.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		F64AFB97BFF1040E1C262F44 /* Pods-Player.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Player.debug.xcconfig"; path = "Target Support Files/Pods-Player/Pods-Player.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,8 +68,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				25688DF42EFF200000E61244 /* CoreMedia.framework in Frameworks */,
 				2584BB322EF1D2EF00C473C8 /* AVFoundation.framework in Frameworks */,
-				0C80B921A6F3F58F76C31292 /* libPods-Player.a in Frameworks */,
+				0CF8038BF582E7C3B9574A45 /* libPods-Player.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -64,11 +89,22 @@
 			name = Player;
 			sourceTree = "<group>";
 		};
-		25483ECA2EFD409B00104BC5 /* New Group */ = {
+		2512B11C2F33BAAD00FCE075 /* CenterSection */ = {
 			isa = PBXGroup;
 			children = (
+				2557C6F02F343C0800BCF74C /* CenterSection.mm */,
+				2557C6F22F343C1F00BCF74C /* CenterSection.h */,
 			);
-			path = "New Group";
+			path = CenterSection;
+			sourceTree = "<group>";
+		};
+		2512B11D2F33BADC00FCE075 /* BottomSection */ = {
+			isa = PBXGroup;
+			children = (
+				250543A82FB08A57009C2C03 /* BottomSection.h */,
+				250543A92FB08A75009C2C03 /* BottomSection.mm */,
+			);
+			path = BottomSection;
 			sourceTree = "<group>";
 		};
 		25483ECB2EFD413900104BC5 /* Layers */ = {
@@ -82,17 +118,59 @@
 		25483ECC2EFD436300104BC5 /* ControlLayer */ = {
 			isa = PBXGroup;
 			children = (
+				2512B11D2F33BADC00FCE075 /* BottomSection */,
+				2512B11C2F33BAAD00FCE075 /* CenterSection */,
+				257B98F02F32756500CDD901 /* TopSection */,
 				25483ECD2EFD439900104BC5 /* ControlLayer.h */,
 				25483ECE2EFD43B100104BC5 /* ControlLayer.mm */,
 			);
 			path = ControlLayer;
 			sourceTree = "<group>";
 		};
+		255776A52F12764A00D9DD18 /* Common */ = {
+			isa = PBXGroup;
+			children = (
+				255776A62F12768200D9DD18 /* CommonButton.h */,
+				255776A72F12769600D9DD18 /* CommonButton.m */,
+			);
+			path = Common;
+			sourceTree = "<group>";
+		};
+		257B98F02F32756500CDD901 /* TopSection */ = {
+			isa = PBXGroup;
+			children = (
+				257B98F12F32763F00CDD901 /* TopSection.mm */,
+				257B98F32F327A6300CDD901 /* TopSection.h */,
+			);
+			path = TopSection;
+			sourceTree = "<group>";
+		};
+		25688DF62EFF200000E61244 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				25688DF52EFF200000E61244 /* AVPlayerAdapter.h */,
+				25688DF12EFF200000E61244 /* AVPlayerAdapter.mm */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		25A000042EFF300000A1B2C3 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				25A000032EFF300000A1B2C3 /* NetworkAuthManager.h */,
+				25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
 		2584BB2C2EF1D03C00C473C8 /* VideoPlayer */ = {
 			isa = PBXGroup;
 			children = (
+				25688DEF2EFF200000E61244 /* PlayerStateCoordinator.cpp */,
+				25688DF62EFF200000E61244 /* Core */,
+				25A000042EFF300000A1B2C3 /* Network */,
+				255776A52F12764A00D9DD18 /* Common */,
 				25483ECB2EFD413900104BC5 /* Layers */,
-				25DD7D872EF6C30C009E0F50 /* EventManager */,
 				2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */,
 				2584BB2D2EF1D05A00C473C8 /* Player-Bridging-Header.h */,
 				2584BB302EF1D07000C473C8 /* RCTVideoPlayer.h */,
@@ -103,8 +181,8 @@
 		25DD7D872EF6C30C009E0F50 /* EventManager */ = {
 			isa = PBXGroup;
 			children = (
-				25DD7D882EF6C370009E0F50 /* EventManager.h */,
-				25688DED2EFF18ED00E61244 /* EventManager.m */,
+				25DD7D882EF6C370009E0F50 /* EventManager.hpp */,
+				25688DED2EFF18ED00E61244 /* EventManager.cpp */,
 			);
 			path = EventManager;
 			sourceTree = "<group>";
@@ -112,9 +190,10 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				25688DF32EFF200000E61244 /* CoreMedia.framework */,
 				2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5DCACB8F33CDC322A6C60F78 /* libPods-Player.a */,
+				87D197E4775130520D13CC75 /* libPods-Player.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -130,7 +209,6 @@
 			isa = PBXGroup;
 			children = (
 				2584BB2C2EF1D03C00C473C8 /* VideoPlayer */,
-				25483ECA2EFD409B00104BC5 /* New Group */,
 				13B07FAE1A68108700A75B9A /* Player */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -153,8 +231,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				3B4392A12AC88292D35C810B /* Pods-Player.debug.xcconfig */,
-				5709B34CF0A7D63546082F79 /* Pods-Player.release.xcconfig */,
+				F64AFB97BFF1040E1C262F44 /* Pods-Player.debug.xcconfig */,
+				229C3DC53F7B600D2CEB5A65 /* Pods-Player.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -166,13 +244,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Player" */;
 			buildPhases = (
-				C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */,
+				E773EB15D612CB8C05A33DE5 /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
-				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
+				4D90EF4378CFBA72FFD96ECD /* [CP] Embed Pods Frameworks */,
+				A469C10511FD05BD1C68D608 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -244,7 +322,7 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"\\\"$WITH_ENVIRONMENT\\\" \\\"$REACT_NATIVE_XCODE\\\"\"\n";
 		};
-		00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */ = {
+		4D90EF4378CFBA72FFD96ECD /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -252,20 +330,33 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
+		A469C10511FD05BD1C68D608 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E773EB15D612CB8C05A33DE5 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -287,27 +378,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		E235C05ADACE081382539298 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Player/Pods-Player-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -315,10 +385,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				25688DF02EFF200000E61244 /* PlayerStateCoordinator.cpp in Sources */,
+				25688DF22EFF200000E61244 /* AVPlayerAdapter.mm in Sources */,
+				25A000012EFF300000A1B2C3 /* NetworkAuthManager.mm in Sources */,
+				255776A82F12769600D9DD18 /* CommonButton.m in Sources */,
+				257B98F22F32763F00CDD901 /* TopSection.mm in Sources */,
 				25483ECF2EFD43B100104BC5 /* ControlLayer.mm in Sources */,
 				2584BB2F2EF1D05A00C473C8 /* RCTVideoPlayer.mm in Sources */,
-				25688DEE2EFF18ED00E61244 /* EventManager.m in Sources */,
+				250543AA2FB08A75009C2C03 /* BottomSection.mm in Sources */,
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				2557C6F12F343C0800BCF74C /* CenterSection.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,7 +403,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3B4392A12AC88292D35C810B /* Pods-Player.debug.xcconfig */;
+			baseConfigurationReference = F64AFB97BFF1040E1C262F44 /* Pods-Player.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -344,6 +420,8 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-framework",
+					"CoreMedia",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = Player;
@@ -356,7 +434,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5709B34CF0A7D63546082F79 /* Pods-Player.release.xcconfig */;
+			baseConfigurationReference = 229C3DC53F7B600D2CEB5A65 /* Pods-Player.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -372,6 +450,8 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-framework",
+					"CoreMedia",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = Player;

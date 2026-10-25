@@ -12,42 +12,46 @@ import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
+import com.player.network.DrmConfig
+import com.player.network.NetworkAuthManager
 
 open class BasePlayer(private val context: Context, var play : Boolean = false, var videoUrl : String) {
 
-    
-
+    val networkAuthManager = NetworkAuthManager()
     val player : ExoPlayer = ExoPlayer.Builder(context).build();
     val playerView : PlayerView = PlayerView(context);
     val playing : Boolean = play;
 
+    var onPlaybackStateListener: ((state: Int, isPlaying: Boolean) -> Unit)? = null
 
-    private lateinit var currentMediaItem : MediaItem;
+    fun configureNetwork(headers: Map<String, String>?, drmConfig: DrmConfig?) {
+        networkAuthManager.configure(headers, drmConfig)
+    }
 
     @OptIn(UnstableApi::class)
     fun startPlayer() {
-        this.currentMediaItem = MediaItem.fromUri(videoUrl)
-        this.player.setMediaItem(this.currentMediaItem)
+        val mediaSource = networkAuthManager.buildMediaSource(context, videoUrl)
+        this.player.setMediaSource(mediaSource)
         this.player.prepare();
         this.player.playWhenReady = this.play;
         this.playerView.player = this.player
-//        val params = FrameLayout.LayoutParams(
-//            FrameLayout.LayoutParams.MATCH_PARENT, // Width: Fill the container
-//            FrameLayout.LayoutParams.WRAP_CONTENT  // Height: Fill the container
-//        )
-//        params.gravity = Gravity.CENTER
+        this.playerView.useController = false
         this.playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
         this.player.addListener(object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
 
             }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                onPlaybackStateListener?.invoke(player.playbackState, isPlaying)
+            }
             override fun onPlaybackStateChanged(state: Int) {
+                onPlaybackStateListener?.invoke(state, player.isPlaying)
                 when (state) {
                     Player.STATE_BUFFERING -> {
-                        // The video is LOADING (show your progress bar)
+                        // The video is LOADING
                     }
                     Player.STATE_READY -> {
-                        // Player is ready. The view will resize automatically based on the video's aspect ratio.
+                        // Player is ready
                     }
                     Player.STATE_IDLE -> {
                         // Player is created but has no media
@@ -73,7 +77,8 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
 
 
     fun cleanUp() {
-        // this.player.
+        this.player.stop()
+        this.player.release()
     }
 
 

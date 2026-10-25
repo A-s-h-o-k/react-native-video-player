@@ -28,6 +28,21 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
         view.setUrl(videoUrl)
     }
 
+    @ReactProp(name = "title")
+    override fun setTitle(view: ReactVideoPlayer, value: String?) {
+        view.setTitle(value ?: "")
+    }
+
+    @ReactProp(name = "headers")
+    override fun setHeaders(view: ReactVideoPlayer, value: String?) {
+        view.setHeaders(value)
+    }
+
+    @ReactProp(name = "drm")
+    override fun setDrm(view: ReactVideoPlayer, value: String?) {
+        view.setDrm(value)
+    }
+
     companion object {
         const val REACT_CLASS = "VideoPlayer"
     }
@@ -38,13 +53,18 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
     }
     @ReactProp(name = "play")
     override fun setPlay(view: ReactVideoPlayer, value: Boolean) {
-
+        if (value) {
+            view.playVideo()
+        } else {
+            view.pauseVideo()
+        }
     }
 
     @ReactProp(name = "iconSize")
     override fun setIconSize(view: ReactVideoPlayer, value : Int) {
 
     }
+
 
     override fun getExportedCustomBubblingEventTypeConstants(): Map<String, Any> =
         mapOf(

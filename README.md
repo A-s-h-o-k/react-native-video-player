@@ -1,8 +1,28 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Enterprise Cross-Platform React Native Video Player
+
+An enterprise-grade, high-performance, cross-platform video player for React Native (Fabric / New Architecture) supporting iOS, tvOS, Android, and Android TV / Fire TV with a **Template-Driven Architecture** and **shared C++ headless playback engine**.
+
+## 📖 Architecture & Design Documentation
+
+| Document | Description |
+| :--- | :--- |
+| **[TASK_STATUS.md](file:///Users/ashokammineni/video-player/new_2/Player/TASK_STATUS.md)** | **Live Implementation Tracker** (Active task spotlight, component status matrix, agent workflow) |
+| **[quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md)** | **Documentation Sitemap & Update Guide** (Index of all active code and specs) |
+| **[ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)** | **Master System Architecture** (Dual-lane data flow, C++ core, Fabric bridge, native templates) |
+| **[USAGE_GUIDE.md](file:///Users/ashokammineni/video-player/new_2/Player/USAGE_GUIDE.md)** | **React Native Usage & API Reference** (Props table, event callbacks, practical code recipes) |
+| **[state_manager_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/state_manager_arch.md)** | **Headless State Coordinator** (Pure C++17 thread-safe state machine & weak-ptr observer bus) |
+| **[core_player_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/core_player_arch.md)** | **Headless Core Player** (AVPlayer & ExoPlayer native engine adapters) |
+| **[base_layout_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/base_layout_arch.md)** | **Master Overlay Container** (Full-bleed layout, smart 5s auto-hide with pause immunity) |
+| **[sections_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/sections_arch.md)** | **Section Layouts & Delegates** (Top, Center, Bottom sections, 2D TV focus grid) |
+| **[button_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/button_arch.md)** | **Base Button Primitive** (`CommonButton` touch targets, TV focus, A11y) |
+| **[AGENTS.md](file:///Users/ashokammineni/video-player/new_2/Player/AGENTS.md)** | **Governance & Engineering Rules** (Strict user approval, 11 core principles) |
+
+---
 
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+
 
 ## Step 1: Start Metro
 

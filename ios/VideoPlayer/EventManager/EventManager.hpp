@@ -30,9 +30,9 @@
 
 #endif /* EventManager_h */
 
-#import <iostream>
+#include <iostream>
 
-class PlayerManager {
+class EventManager {
 
   
   
@@ -43,5 +43,6 @@ public:
   bool isBuffering;
   int playbackTime;
   std::string videoUrl;
+  
   
 };

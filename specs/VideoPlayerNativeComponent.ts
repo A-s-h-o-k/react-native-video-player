@@ -12,6 +12,7 @@ type VideoPlayer = {
 
 export interface NativeProps extends ViewProps {
   videoUrl: string;
+  title?: string;
   onScriptLoaded?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
   seekTo?: Int32;
   play: boolean;
@@ -21,6 +22,8 @@ export interface NativeProps extends ViewProps {
   onPlay?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
   onPause?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
   iconSize?: Int32;
+  headers?: string;
+  drm?: string;
 }
 
 export default codegenNativeComponent<NativeProps>(

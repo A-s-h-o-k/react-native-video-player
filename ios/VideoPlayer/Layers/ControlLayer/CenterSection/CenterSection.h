@@ -1,28 +1,36 @@
 //
-//  Header.h
+//  CenterSection.h
 //  Player
 //
 //  Created by Ashok Ammineni on 05/02/26.
 //
 
-#ifndef Header_h
-#define Header_h
+#import <UIKit/UIKit.h>
+#import "../../../Common/CommonButton.h"
 
-#import <UIKit/UIButton.h>
-#import <UIKit/UIStackView.h>
-#import "../ControlLayer.h"
+NS_ASSUME_NONNULL_BEGIN
 
-@class ControlLayer;
+@class CenterSection;
+
+@protocol CenterSectionDelegate <NSObject>
+- (void)centerSectionDidTapPlayPause:(CenterSection *)section;
+- (void)centerSection:(CenterSection *)section didTapRewind:(NSTimeInterval)seconds;
+- (void)centerSection:(CenterSection *)section didTapForward:(NSTimeInterval)seconds;
+@end
 
 @interface CenterSection : UIStackView
 
-@property(nonatomic, strong) UIButton * playButton;
-@property(nonatomic, strong) UIButton * forwardButton;
-@property(nonatomic, strong) UIButton * backwardButton;
-@property(nonatomic, strong) ControlLayer * controlLayer;
+@property (nonatomic, strong) CommonButton *playButton;
+@property (nonatomic, strong) CommonButton *forwardButton;
+@property (nonatomic, strong) CommonButton *backwardButton;
 
--(instancetype) initWithFrame:(CGRect)frame;
+@property (nonatomic, weak, nullable) id<CenterSectionDelegate> delegate;
+
+/** Updates play/pause button icon and accessibility label */
+- (void)setPlaying:(BOOL)playing;
+
+- (instancetype)initWithFrame:(CGRect)frame;
 
 @end
-#endif /* Header_h */
 
+NS_ASSUME_NONNULL_END

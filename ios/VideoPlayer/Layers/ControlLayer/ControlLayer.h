@@ -4,40 +4,42 @@
 //
 //  Created by Ashok Ammineni on 25/12/25.
 //
-#import <Foundation/Foundation.h>
-#import <UIKit/UIView.h>
-#import <UIKit/UIButton.h>
-#import <AVFoundation/AVPlayerLayer.h>
+
 #import <UIKit/UIKit.h>
-#import "../../EventManager/EventManager.cpp"
+#import <AVFoundation/AVFoundation.h>
+#import <CoreMedia/CoreMedia.h>
+#import "./TopSection/TopSection.h"
 #import "./CenterSection/CenterSection.h"
+#import "./BottomSection/BottomSection.h"
 
+#ifdef __cplusplus
+#import "../../../cpp/PlayerStateCoordinator.hpp"
+#import "../../../cpp/IPlayerStateObserver.hpp"
+#endif
 
+NS_ASSUME_NONNULL_BEGIN
 
-#ifndef ControlLayer_h
-#define ControlLayer_h
-
-@interface ControlLayer : UIView
+@interface ControlLayer : UIView <CenterSectionDelegate, BottomSectionDelegate, TopSectionDelegate>
 
 @property (nonatomic, assign) BOOL playing;
-@property (nonatomic, strong) AVPlayer * player;
-//@property (nonatomic, strong) UIButton * playButton;
-@property (nonatomic, strong) UIButton * nextButton;
-@property (nonatomic, strong) UIButton * previousButton;
-@property (nonatomic, strong) UIStackView * stackView;
-@property (nonatomic, strong) UIButton * forward;
-@property (nonatomic, strong) UIButton * backward;
-@property (nonatomic, strong) UIStackView * topControlView;
-@property (nonatomic, strong) CenterSection * centerControlView;
-@property (nonatomic, strong) UIStackView * bottomControlView;
-@property (nonatomic, assign) EventManager * managerRef;
-@property (nonatomic, strong) NSTimer * _controlsAutoHideTimer;
+@property (nonatomic, strong, nullable) AVPlayer *player;
 
--(void) setVideoPlayer: (AVPlayer*) player;
-//-(void) onPlay;
-//-(void) onPause;
+@property (nonatomic, strong) UIStackView *stackView;
+@property (nonatomic, strong) TopSection *topControlView;
+@property (nonatomic, strong) CenterSection *centerControlView;
+@property (nonatomic, strong) BottomSection *bottomControlView;
+@property (nonatomic, strong) UIActivityIndicatorView *bufferingSpinner;
+
+#ifdef __cplusplus
+- (void)setCoordinator:(nullable PlayerCore::PlayerStateCoordinator *)coordinator;
+#endif
+
+- (void)setVideoPlayer:(AVPlayer *)player;
+- (void)setTitle:(nullable NSString *)title;
+- (void)showControlsAnimated:(BOOL)animated;
+- (void)hideControlsAnimated:(BOOL)animated;
+- (void)resetAutoHideTimer;
 
 @end
 
-
-#endif /* ControlLayer_h */
+NS_ASSUME_NONNULL_END

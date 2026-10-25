@@ -1,91 +1,81 @@
 //
-//  CenterSection.m
+//  CenterSection.mm
 //  Player
 //
 //  Created by Ashok Ammineni on 05/02/26.
 //
 
-#import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
-#import <Foundation/Foundation.h>
-
-
 #import "CenterSection.h"
 
-
+@interface CenterSection ()
+@property (nonatomic, assign) BOOL isPlayingState;
+@end
 
 @implementation CenterSection
 
-UIImage *playImage = [UIImage systemImageNamed:@"play.fill"];
-UIImage *pauseImage = [UIImage systemImageNamed:@"pause.fill"];
-UIImage *backwardImage = [UIImage systemImageNamed: @"15.arrow.trianglehead.counterclockwise"];
-UIImage *forwardImage = [UIImage systemImageNamed:@"15.arrow.trianglehead.clockwise"];
-UIColor *lightTransparent = [UIColor colorWithWhite:0.1 alpha:0.5];
-
 - (instancetype)initWithFrame:(CGRect)frame {
-  
-  self = [super initWithFrame: frame];
-  [self setUpUi];
+  self = [super initWithFrame:frame];
+  if (self) {
+    [self setupUI];
+  }
   return self;
 }
 
-- (void) setUpUi {
-  self.playButton = [UIButton buttonWithType:UIButtonTypeSystem];
-  self.playButton.translatesAutoresizingMaskIntoConstraints = NO;
-  [self.playButton setBackgroundColor:lightTransparent];
-  [self.playButton setImage:playImage forState:UIControlStateNormal];
-  self.playButton.tintColor = UIColor.whiteColor;
-  self.playButton.clipsToBounds = YES;
-  self.playButton.layer.cornerRadius = 80/2;
-  self.backwardButton = [UIButton buttonWithType:UIButtonTypeSystem];
-  self.backwardButton.translatesAutoresizingMaskIntoConstraints = NO;
-  [self.backwardButton setBackgroundColor:lightTransparent];
-  [self.backwardButton setImage:backwardImage forState:UIControlStateNormal];
-  self.backwardButton.tintColor = UIColor.whiteColor;
-  self.backwardButton.clipsToBounds = YES;
-  self.backwardButton.layer.cornerRadius = 80/2;
-  self.forwardButton = [UIButton buttonWithType:UIButtonTypeSystem];
-  self.forwardButton.translatesAutoresizingMaskIntoConstraints = NO;
-  [self.forwardButton setBackgroundColor:lightTransparent];
-  [self.forwardButton setImage:forwardImage forState:UIControlStateNormal];
-  self.forwardButton.tintColor = UIColor.whiteColor;
-  self.forwardButton.clipsToBounds = YES;
-  self.forwardButton.layer.cornerRadius = 80/2;
+- (void)setupUI {
+  self.axis = UILayoutConstraintAxisHorizontal;
+  self.alignment = UIStackViewAlignmentCenter;
+  self.distribution = UIStackViewDistributionEqualCentering;
+  self.spacing = 24.0;
+  self.translatesAutoresizingMaskIntoConstraints = NO;
+
+  // 1. Rewind Button (15s)
+  self.backwardButton = [[CommonButton alloc] initWithSize:CommonButtonSizeMedium style:CommonButtonStyleTranslucentCircle];
+  [self.backwardButton setSystemIcon:@"gobackward.15" pointSize:22 weight:UIImageSymbolWeightSemibold];
+  [self.backwardButton configureAccessibilityWithLabel:@"Rewind 15 seconds" hint:@"Seeks backward by 15 seconds"];
+  __weak CenterSection *weakSelf = self;
+  self.backwardButton.onTap = ^(CommonButton * _Nonnull button) {
+    CenterSection *strongSelf = weakSelf;
+    if (strongSelf && [strongSelf.delegate respondsToSelector:@selector(centerSection:didTapRewind:)]) {
+      [strongSelf.delegate centerSection:strongSelf didTapRewind:15.0];
+    }
+  };
+
+  // 2. Play / Pause Button (Large)
+  self.playButton = [[CommonButton alloc] initWithSize:CommonButtonSizeLarge style:CommonButtonStyleTranslucentCircle];
+  [self.playButton setSystemIcon:@"play.fill" pointSize:32 weight:UIImageSymbolWeightBold];
+  [self.playButton configureAccessibilityWithLabel:@"Play" hint:@"Starts video playback"];
+  self.playButton.onTap = ^(CommonButton * _Nonnull button) {
+    CenterSection *strongSelf = weakSelf;
+    if (strongSelf && [strongSelf.delegate respondsToSelector:@selector(centerSectionDidTapPlayPause:)]) {
+      [strongSelf.delegate centerSectionDidTapPlayPause:strongSelf];
+    }
+  };
+
+  // 3. Fast Forward Button (15s)
+  self.forwardButton = [[CommonButton alloc] initWithSize:CommonButtonSizeMedium style:CommonButtonStyleTranslucentCircle];
+  [self.forwardButton setSystemIcon:@"goforward.15" pointSize:22 weight:UIImageSymbolWeightSemibold];
+  [self.forwardButton configureAccessibilityWithLabel:@"Fast forward 15 seconds" hint:@"Seeks forward by 15 seconds"];
+  self.forwardButton.onTap = ^(CommonButton * _Nonnull button) {
+    CenterSection *strongSelf = weakSelf;
+    if (strongSelf && [strongSelf.delegate respondsToSelector:@selector(centerSection:didTapForward:)]) {
+      [strongSelf.delegate centerSection:strongSelf didTapForward:15.0];
+    }
+  };
+
   [self addArrangedSubview:self.backwardButton];
   [self addArrangedSubview:self.playButton];
   [self addArrangedSubview:self.forwardButton];
-  
-  
-  [NSLayoutConstraint activateConstraints:@[
-    [self.playButton.widthAnchor constraintEqualToConstant:80.0],
-    [self.playButton.heightAnchor constraintEqualToConstant:80.0]
-  ]];
-  [NSLayoutConstraint activateConstraints:@[
-    [self.backwardButton.widthAnchor constraintEqualToConstant:80.0],
-    [self.backwardButton.heightAnchor constraintEqualToConstant:80.0]
-  ]];
-  [NSLayoutConstraint activateConstraints:@[
-    [self.forwardButton.widthAnchor constraintEqualToConstant:80.0],
-    [self.forwardButton.heightAnchor constraintEqualToConstant:80.0]
-  ]];
-  
-  [self.playButton addTarget:self action:@selector(onPressPausePlay) forControlEvents:UIControlEventTouchUpInside];
 }
 
--(void) onPressPausePlay{
-  self.controlLayer.dispatch()
+- (void)setPlaying:(BOOL)playing {
+  _isPlayingState = playing;
+  if (playing) {
+    [self.playButton setSystemIcon:@"pause.fill" pointSize:32 weight:UIImageSymbolWeightBold];
+    [self.playButton configureAccessibilityWithLabel:@"Pause" hint:@"Pauses video playback"];
+  } else {
+    [self.playButton setSystemIcon:@"play.fill" pointSize:32 weight:UIImageSymbolWeightBold];
+    [self.playButton configureAccessibilityWithLabel:@"Play" hint:@"Resumes video playback"];
+  }
 }
-
--(void) onPressPause {
-  
-}
-
--(void) onPressPlay {
-  
-}
-
-
-
 
 @end
-

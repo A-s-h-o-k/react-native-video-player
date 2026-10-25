@@ -7,9 +7,16 @@
 
 #ifndef RCTVideoPlayer_h
 #define RCTVideoPlayer_h
-#import <React/RCTViewManager.h>
 
-@interface RCTVideoPlayer : RCTViewManager
+#import <React/RCTViewComponentView.h>
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface RCTVideoPlayer : RCTViewComponentView
+
 @end
+
+NS_ASSUME_NONNULL_END
 
 #endif /* RCTVideoPlayer_h */
