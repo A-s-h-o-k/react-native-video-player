@@ -10,8 +10,10 @@
 
 @interface BottomSection () {
     NSTimeInterval _duration;
+    BOOL _isFullscreen;
 }
 @property (nonatomic, assign, readwrite) BOOL isScrubbing;
+@property (nonatomic, copy, nullable) NSDictionary<NSString *, NSString *> *customIcons;
 @end
 
 @implementation BottomSection
@@ -32,6 +34,7 @@
     self.distribution = UIStackViewDistributionFill;
     self.spacing = 12.0;
     self.translatesAutoresizingMaskIntoConstraints = NO;
+    self.insetsLayoutMarginsFromSafeArea = NO;
     self.layoutMargins = UIEdgeInsetsMake(0, 16.0, 8.0, 16.0);
     self.layoutMarginsRelativeArrangement = YES;
 
@@ -45,7 +48,17 @@
     [self.currentTimeLabel setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
     [self.currentTimeLabel setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
 
-    // 2. High-Precision 60fps Scrubber Slider
+    // 2. High-Precision 60fps Scrubber Slider & Secondary Buffer Progress Track
+    UIView *sliderContainer = [[UIView alloc] init];
+    sliderContainer.translatesAutoresizingMaskIntoConstraints = NO;
+
+    self.bufferProgressView = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
+    self.bufferProgressView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.bufferProgressView.progressTintColor = [UIColor colorWithWhite:1.0 alpha:0.45];
+    self.bufferProgressView.trackTintColor = [UIColor colorWithWhite:1.0 alpha:0.18];
+    self.bufferProgressView.progress = 0.0;
+    self.bufferProgressView.userInteractionEnabled = NO;
+
     self.timeTrack = [[UISlider alloc] init];
     self.timeTrack.translatesAutoresizingMaskIntoConstraints = NO;
     self.timeTrack.minimumValue = 0.0;
@@ -53,7 +66,7 @@
     self.timeTrack.value = 0.0;
     self.timeTrack.continuous = YES;
     self.timeTrack.minimumTrackTintColor = UIColor.whiteColor;
-    self.timeTrack.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.3];
+    self.timeTrack.maximumTrackTintColor = UIColor.clearColor;
     self.timeTrack.isAccessibilityElement = YES;
     self.timeTrack.accessibilityLabel = @"Video timeline scrubber";
     self.timeTrack.accessibilityTraits = UIAccessibilityTraitAdjustable;
@@ -62,6 +75,21 @@
     [self.timeTrack addTarget:self action:@selector(sliderTouchDown:) forControlEvents:UIControlEventTouchDown];
     [self.timeTrack addTarget:self action:@selector(sliderValueChanged:) forControlEvents:UIControlEventValueChanged];
     [self.timeTrack addTarget:self action:@selector(sliderTouchUp:) forControlEvents:(UIControlEventTouchUpInside | UIControlEventTouchUpOutside | UIControlEventTouchCancel)];
+
+    [sliderContainer addSubview:self.bufferProgressView];
+    [sliderContainer addSubview:self.timeTrack];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [self.bufferProgressView.leadingAnchor constraintEqualToAnchor:sliderContainer.leadingAnchor constant:2.0],
+        [self.bufferProgressView.trailingAnchor constraintEqualToAnchor:sliderContainer.trailingAnchor constant:-2.0],
+        [self.bufferProgressView.centerYAnchor constraintEqualToAnchor:sliderContainer.centerYAnchor],
+        [self.bufferProgressView.heightAnchor constraintEqualToConstant:2.5],
+
+        [self.timeTrack.leadingAnchor constraintEqualToAnchor:sliderContainer.leadingAnchor],
+        [self.timeTrack.trailingAnchor constraintEqualToAnchor:sliderContainer.trailingAnchor],
+        [self.timeTrack.topAnchor constraintEqualToAnchor:sliderContainer.topAnchor],
+        [self.timeTrack.bottomAnchor constraintEqualToAnchor:sliderContainer.bottomAnchor],
+    ]];
 
     // 3. Total Duration Label
     self.durationLabel = [[UILabel alloc] init];
@@ -85,8 +113,10 @@
         }
     };
 
+    self.fullscreenButton.hidden = YES;
+
     [self addArrangedSubview:self.currentTimeLabel];
-    [self addArrangedSubview:self.timeTrack];
+    [self addArrangedSubview:sliderContainer];
     [self addArrangedSubview:self.durationLabel];
     [self addArrangedSubview:self.fullscreenButton];
 }
@@ -134,9 +164,81 @@
     self.durationLabel.text = [self stringFromSeconds:duration];
 }
 
+- (void)updateBufferTime:(NSTimeInterval)bufferedTime percentage:(double)percentage {
+    float prog = (float)(percentage / 100.0);
+    self.bufferProgressView.progress = fmaxf(0.0f, fminf(1.0f, prog));
+}
+
+- (void)setFullscreen:(BOOL)isFullscreen {
+    _isFullscreen = isFullscreen;
+    if (isFullscreen) {
+        [self.fullscreenButton setIconSource:self.customIcons[@"fullscreenExit"] fallbackSystemIcon:@"arrow.down.right.and.arrow.up.left" pointSize:16 weight:UIImageSymbolWeightSemibold];
+        [self.fullscreenButton configureAccessibilityWithLabel:@"Exit fullscreen" hint:@"Exits fullscreen display"];
+    } else {
+        [self.fullscreenButton setIconSource:self.customIcons[@"fullscreenEnter"] fallbackSystemIcon:@"arrow.up.left.and.arrow.down.right" pointSize:16 weight:UIImageSymbolWeightSemibold];
+        [self.fullscreenButton configureAccessibilityWithLabel:@"Fullscreen" hint:@"Toggles fullscreen display"];
+    }
+}
+
+- (void)setShowFullscreenButton:(BOOL)show {
+    self.fullscreenButton.hidden = !show;
+}
+
 - (void)setAccentColor:(UIColor *)color {
     if (color) {
         self.timeTrack.minimumTrackTintColor = color;
+        self.timeTrack.thumbTintColor = color;
+    }
+}
+
+- (void)setTrackColor:(UIColor *)color {
+    if (color) {
+        self.bufferProgressView.trackTintColor = color;
+    }
+}
+
+- (void)setBufferColor:(UIColor *)color {
+    if (color) {
+        self.bufferProgressView.progressTintColor = color;
+    }
+}
+
+- (void)setCustomIcons:(NSDictionary<NSString *, NSString *> *)customIcons {
+    _customIcons = [customIcons copy];
+    NSString *thumbSource = customIcons[@"sliderThumb"];
+    if (thumbSource && thumbSource.length > 0) {
+        [self loadThumbImage:thumbSource];
+    }
+    [self setFullscreen:_isFullscreen];
+}
+
+- (void)loadThumbImage:(NSString *)thumbSource {
+    if ([thumbSource hasPrefix:@"file://"] || [thumbSource hasPrefix:@"/"]) {
+        NSString *cleanPath = [thumbSource stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+        UIImage *img = [UIImage imageWithContentsOfFile:cleanPath];
+        if (img) {
+            [self.timeTrack setThumbImage:img forState:UIControlStateNormal];
+        }
+    } else if ([thumbSource hasPrefix:@"http://"] || [thumbSource hasPrefix:@"https://"]) {
+        NSURL *url = [NSURL URLWithString:thumbSource];
+        if (url) {
+            __weak typeof(self) weakSelf = self;
+            [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+                if (data && !error) {
+                    UIImage *img = [UIImage imageWithData:data];
+                    if (img) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [weakSelf.timeTrack setThumbImage:img forState:UIControlStateNormal];
+                        });
+                    }
+                }
+            }] resume];
+        }
+    } else {
+        UIImage *img = [UIImage imageNamed:thumbSource] ?: [UIImage systemImageNamed:thumbSource];
+        if (img) {
+            [self.timeTrack setThumbImage:img forState:UIControlStateNormal];
+        }
     }
 }
 

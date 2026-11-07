@@ -1,0 +1,27 @@
+{
+  "theme": {
+    "accentColor": "#FFFFFF",
+    "trackColor": "rgba(255, 255, 255, 0.2)",
+    "bufferColor": "rgba(255, 255, 255, 0.4)"
+  },
+  "icons": {
+    "play": "play.fill",
+    "pause": "pause.fill",
+    "replay": "gobackward",
+    "rewind": "gobackward.15",
+    "forward": "goforward.15",
+    "fullscreenEnter": "viewfinder",
+    "fullscreenExit": "arrow.down.right.and.arrow.up.left",
+    "sliderThumb": ""
+  },
+  "behavior": {
+    "skipInterval": 15,
+    "autoHideTimeout": 5000,
+    "showRewindButton": true,
+    "showForwardButton": true,
+    "showPlayPauseButton": true,
+    "showFullscreenButton": false,
+    "controls": true
+  }
+}
+

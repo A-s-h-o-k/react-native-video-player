@@ -26,6 +26,21 @@ class CenterSection @JvmOverloads constructor(
     val forwardButton: CommonButton
 
     var listener: CenterSectionListener? = null
+    var skipInterval: Int = 15
+        set(value) {
+            field = if (value > 0) value else 15
+            updateRewindButtonIcon()
+            updateForwardButtonIcon()
+        }
+
+    var customIcons: Map<String, String>? = null
+        set(value) {
+            field = value
+            updateRewindButtonIcon()
+            updateForwardButtonIcon()
+            setPlaying(isPlayingState, isEndedState)
+        }
+
     private var isPlayingState: Boolean = false
     private var isEndedState: Boolean = false
 
@@ -38,9 +53,9 @@ class CenterSection @JvmOverloads constructor(
             buttonSize = CommonButtonSize.MEDIUM
             buttonStyle = CommonButtonStyle.TRANSLUCENT_CIRCLE
             setImageResource(android.R.drawable.ic_media_rew)
-            configureAccessibility("Rewind 15 seconds", "Seeks backward by 15 seconds")
+            configureAccessibility("Rewind $skipInterval seconds", "Seeks backward by $skipInterval seconds")
             onTap = {
-                listener?.onRewindClicked(15)
+                listener?.onRewindClicked(skipInterval)
             }
         }
 
@@ -60,9 +75,9 @@ class CenterSection @JvmOverloads constructor(
             buttonSize = CommonButtonSize.MEDIUM
             buttonStyle = CommonButtonStyle.TRANSLUCENT_CIRCLE
             setImageResource(android.R.drawable.ic_media_ff)
-            configureAccessibility("Fast forward 15 seconds", "Seeks forward by 15 seconds")
+            configureAccessibility("Fast forward $skipInterval seconds", "Seeks forward by $skipInterval seconds")
             onTap = {
-                listener?.onForwardClicked(15)
+                listener?.onForwardClicked(skipInterval)
             }
         }
 
@@ -78,6 +93,28 @@ class CenterSection @JvmOverloads constructor(
         addView(forwardButton, mediumParams)
     }
 
+    fun setShowRewindButton(show: Boolean) {
+        backwardButton.visibility = if (show) VISIBLE else GONE
+    }
+
+    fun setShowForwardButton(show: Boolean) {
+        forwardButton.visibility = if (show) VISIBLE else GONE
+    }
+
+    fun setShowPlayPauseButton(show: Boolean) {
+        playButton.visibility = if (show) VISIBLE else GONE
+    }
+
+    private fun updateRewindButtonIcon() {
+        backwardButton.setIconSource(customIcons?.get("rewind"), android.R.drawable.ic_media_rew)
+        backwardButton.configureAccessibility("Rewind $skipInterval seconds", "Seeks backward by $skipInterval seconds")
+    }
+
+    private fun updateForwardButtonIcon() {
+        forwardButton.setIconSource(customIcons?.get("forward"), android.R.drawable.ic_media_ff)
+        forwardButton.configureAccessibility("Fast forward $skipInterval seconds", "Seeks forward by $skipInterval seconds")
+    }
+
     fun setPlaybackEnded(ended: Boolean) {
         setPlaying(playing = false, isEnded = ended)
     }
@@ -86,13 +123,13 @@ class CenterSection @JvmOverloads constructor(
         isPlayingState = playing
         isEndedState = isEnded
         if (isEnded) {
-            playButton.setImageResource(R.drawable.ic_replay)
+            playButton.setIconSource(customIcons?.get("replay"), R.drawable.ic_replay)
             playButton.configureAccessibility("Replay", "Replays video from the beginning")
         } else if (playing) {
-            playButton.setImageResource(android.R.drawable.ic_media_pause)
+            playButton.setIconSource(customIcons?.get("pause"), android.R.drawable.ic_media_pause)
             playButton.configureAccessibility("Pause", "Pauses video playback")
         } else {
-            playButton.setImageResource(android.R.drawable.ic_media_play)
+            playButton.setIconSource(customIcons?.get("play"), android.R.drawable.ic_media_play)
             playButton.configureAccessibility("Play", "Resumes video playback")
         }
     }

@@ -19,6 +19,8 @@ PlayerStateCoordinator::PlayerStateCoordinator() {
     snapshot_.volume = 1.0f;
     snapshot_.isMuted = false;
     snapshot_.isScrubbing = false;
+    snapshot_.networkPingMs = 0.0;
+    snapshot_.bandwidthBitrateBps = 0.0;
 }
 
 PlayerStateCoordinator::~PlayerStateCoordinator() {
@@ -295,6 +297,8 @@ void PlayerStateCoordinator::requestReset() {
         snapshot_.duration = 0.0;
         snapshot_.bufferedTime = 0.0;
         snapshot_.isScrubbing = false;
+        snapshot_.networkPingMs = 0.0;
+        snapshot_.bandwidthBitrateBps = 0.0;
         observersCopy = getActiveObserversLocked();
     }
     for (const auto& obs : observersCopy) {
@@ -386,6 +390,19 @@ void PlayerStateCoordinator::notifyEngineBuffer(double bufferedTime) {
     }
     for (const auto& obs : observersCopy) {
         obs->onBufferUpdated(bufferedTime, percentage);
+    }
+}
+
+void PlayerStateCoordinator::notifyEngineNetworkMetrics(double pingMs, double bandwidthBitrateBps) {
+    std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
+    {
+        std::lock_guard<std::mutex> lock(stateMutex_);
+        snapshot_.networkPingMs = pingMs;
+        snapshot_.bandwidthBitrateBps = bandwidthBitrateBps;
+        observersCopy = getActiveObserversLocked();
+    }
+    for (const auto& obs : observersCopy) {
+        obs->onNetworkMetricsUpdated(pingMs, bandwidthBitrateBps);
     }
 }
 

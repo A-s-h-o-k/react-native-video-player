@@ -114,6 +114,56 @@
   [self setImage:image forState:UIControlStateNormal];
 }
 
+- (void)setIconSource:(nullable NSString *)iconSource
+   fallbackSystemIcon:(NSString *)fallbackSystemIcon
+            pointSize:(CGFloat)pointSize
+               weight:(UIImageSymbolWeight)weight {
+  if (iconSource && iconSource.length > 0) {
+    // 1. Check local file or remote URL
+    if ([iconSource hasPrefix:@"file://"] || [iconSource hasPrefix:@"/"]) {
+      NSString *cleanPath = [iconSource stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+      UIImage *image = [UIImage imageWithContentsOfFile:cleanPath];
+      if (image) {
+        [self setImage:image forState:UIControlStateNormal];
+        return;
+      }
+    } else if ([iconSource hasPrefix:@"http://"] || [iconSource hasPrefix:@"https://"]) {
+      NSURL *url = [NSURL URLWithString:iconSource];
+      if (url) {
+        __weak typeof(self) weakSelf = self;
+        [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+          if (data && !error) {
+            UIImage *image = [UIImage imageWithData:data];
+            if (image) {
+              dispatch_async(dispatch_get_main_queue(), ^{
+                [weakSelf setImage:image forState:UIControlStateNormal];
+              });
+            }
+          }
+        }] resume];
+        return;
+      }
+    } else {
+      // 2. Check main bundle asset
+      UIImage *assetImg = [UIImage imageNamed:iconSource];
+      if (assetImg) {
+        [self setImage:assetImg forState:UIControlStateNormal];
+        return;
+      }
+      // 3. Check SF Symbol
+      UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:pointSize weight:weight];
+      UIImage *symbolImg = [UIImage systemImageNamed:iconSource withConfiguration:config];
+      if (symbolImg) {
+        [self setImage:symbolImg forState:UIControlStateNormal];
+        return;
+      }
+    }
+  }
+
+  // Fallback to default system icon
+  [self setSystemIcon:fallbackSystemIcon pointSize:pointSize weight:weight];
+}
+
 #pragma mark - Minimum 44x44pt Touch Target (Apple HIG)
 
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {

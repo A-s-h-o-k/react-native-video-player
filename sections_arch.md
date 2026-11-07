@@ -71,7 +71,7 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | **`TopSection`** | Horizontal Stack | • Back / Dismiss button<br>• Video title / episode subtitle<br>• Settings / CC / Audio track buttons | Tap back to exit, tap settings to open modal |
 | **`CenterSection`** | Horizontal Centered Stack | • Rewind (15s) `CommonButton`<br>• Play/Pause `CommonButton` (Large)<br>• Forward (15s) `CommonButton` | Immediate playback toggling and fixed-step seeking |
-| **`BottomSection`** | Horizontal Stack | • Current elapsed time<br>• High-precision native Scrubber bar<br>• Remaining / total duration<br>• Fullscreen toggle button | Real-time continuous scrub seeking and fullscreen mode |
+| **`BottomSection`** | Horizontal Stack | • Current elapsed time<br>• High-precision native Scrubber bar<br>• Remaining / total duration<br>• Fullscreen toggle button (defaults to hidden, controlled via `showFullscreenButton`) | Real-time continuous scrub seeking, fullscreen toggle, and `onFullscreenChange` native events |
 
 ---
 
@@ -177,9 +177,10 @@ For 10-foot viewing experiences, the sections form a natural 2D navigation grid:
 - [x] **CenterSection (Android / Android TV)**: [CenterSection.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/sections/CenterSection.kt) — fully implemented with `CommonButton.kt`, `CenterSectionListener`, rewind 15s, play/pause toggle with playback ended Replay button state (`ic_replay`), forward 15s.
 - [x] **Master ControlLayer (iOS / tvOS)**: [ControlLayer.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/ControlLayer.h) & [ControlLayer.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/ControlLayer.mm) — connects `CenterSectionDelegate`, `BottomSectionDelegate`, and `TopSectionDelegate`, manages smart 5s auto-hide with pause and scrub immunity, tap-to-toggle, and wires directly to `PlayerStateCoordinator`.
 - [x] **Master ControlLayer (Android / Android TV)**: [ControlLayer.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/ControlLayer.kt) — connects `CenterSectionListener`, `BottomSectionListener`, and `TopSectionListener`, manages 5s auto-hide with pause and scrub immunity, and periodic position looper.
-- [x] **BottomSection (iOS / tvOS)**: [BottomSection.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/BottomSection/BottomSection.h) & [BottomSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/BottomSection/BottomSection.mm) — fully implemented with 60fps timeline scrubber, monospaced time labels, fullscreen toggle, and `BottomSectionDelegate` wired to `PlayerStateCoordinator` and auto-hide scrub immunity.
-- [x] **BottomSection (Android / Android TV)**: [BottomSection.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/sections/BottomSection.kt) — fully implemented with SeekBar, monospaced time labels, `CommonButton` fullscreen toggle, and `BottomSectionListener` wired to `ControlLayer.kt`.
-- [x] **TopSection (iOS / tvOS)**: [TopSection.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/TopSection/TopSection.h) & [TopSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/TopSection/TopSection.mm) — back `CommonButton`, video title label with shadow, captions and settings `CommonButton`, pinned to the top edge of `controlsContainerView` with `insetsLayoutMarginsFromSafeArea = NO` for flush `y = 8pt` alignment, wired to `TopSectionDelegate` and Fabric `title` prop.
+- [x] **BottomSection (iOS / tvOS)**: [BottomSection.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/BottomSection/BottomSection.h) & [BottomSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/BottomSection/BottomSection.mm) — fully implemented with dual-track 60fps timeline scrubber (`UISlider` + `UIProgressView` secondary buffer track), monospaced time labels, fullscreen toggle (`arrow.up.left.and.arrow.down.right` <-> `arrow.down.right.and.arrow.up.left`), pinned to `safeAreaLayoutGuide.bottomAnchor` to clear home indicators with `insetsLayoutMarginsFromSafeArea = NO`, and `BottomSectionDelegate` wired to `PlayerStateCoordinator` and auto-hide scrub immunity.
+- [x] **BottomSection (Android / Android TV)**: [BottomSection.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/sections/BottomSection.kt) — fully implemented with SeekBar (supporting `secondaryProgress` buffer progress), monospaced time labels, `CommonButton` fullscreen toggle (`ic_menu_crop` <-> `ic_menu_close_clear_cancel`), and `BottomSectionListener` wired to `ControlLayer.kt`.
+- [x] **Controlled & Native Immersive Fullscreen**: Full bidirectional synchronization between consumer React Native props (`fullscreen`, `onFullscreenChange`) and native layers (`setFullscreen:` in `BottomSection`, `ControlLayer`, `RCTVideoPlayer`, and `ReactVideoPlayer`). Toggles native landscape orientation (`UIWindowSceneGeometryPreferencesIOS` / `SCREEN_ORIENTATION_SENSOR_LANDSCAPE`) and immersive system bar visibility (`WindowInsetsControllerCompat`).
+- [x] **TopSection (iOS / tvOS)**: [TopSection.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/TopSection/TopSection.h) & [TopSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/TopSection/TopSection.mm) — back `CommonButton`, video title label with shadow, captions and settings `CommonButton`, pinned to `safeAreaLayoutGuide.topAnchor` in `ControlLayer.mm` with `insetsLayoutMarginsFromSafeArea = NO` to automatically avoid notch / Dynamic Island collisions, wired to `TopSectionDelegate` and Fabric `title` prop.
 - [x] **TopSection (Android / Android TV)**: [TopSection.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ui/sections/TopSection.kt) — back `CommonButton`, video title label, captions and settings `CommonButton`, wired to `TopSectionListener` and React prop `title`.
 
 ---
@@ -189,5 +190,27 @@ For 10-foot viewing experiences, the sections form a natural 2D navigation grid:
 The Section Layout architecture serves as the foundation for native player templates:
 1. **Turnkey Native Integration**: `ControlLayer` hosts `TopSection`, `CenterSection`, and `BottomSection` within a unified native view stack on both iOS and Android.
 2. **Template Customization**: Rather than requiring developers to manually position individual buttons in JSX, pre-built native templates (e.g. Cinema, Minimal, Live, Leanback) dynamically adjust section layouts, visibility, and typography natively with maximum 60/120 FPS performance and zero bridge latency.
+
+---
+
+## 10. Customizable Control Props & Theming Integration (v1.0.0)
+
+All three sections and the master `ControlLayer` consume declarative styling tokens:
+
+- **`BottomSection`**:
+  - `sliderThumb`: Custom graphic replacing default slider thumb notch (`UISlider.setThumbImage:forState:` on iOS, `SeekBar.thumb = drawable` on Android).
+  - `accentColor`: Sets thumb tint and active progress track tint (`tintColor` / `thumbTintList`, `progressTintList`).
+  - `trackColor`: Sets inactive track background tint.
+  - `bufferColor`: Sets buffered chunk bar tint.
+  - `fullscreenEnter` & `fullscreenExit`: Custom replaceable icons.
+- **`CenterSection`**:
+  - `play`, `pause`, `replay`, `rewind`, `forward`: Custom replaceable button icons.
+  - `skipInterval`: Configurable rewind/forward jump step in seconds (default: 15).
+  - `showRewindButton`, `showForwardButton`, `showPlayPauseButton`: Individual button visibility toggles.
+- **`ControlLayer`**:
+  - `autoHideTimeout`: Dynamic inactivity auto-hide duration in milliseconds (default: 5000, 0 = always visible).
+  - `controls`: Complete native overlay visibility toggle (set `false` for headless mode).
+  - `readFromJson`: Auto-loads bundled `default-player-config.json` via Metro at build time.
+
 
 

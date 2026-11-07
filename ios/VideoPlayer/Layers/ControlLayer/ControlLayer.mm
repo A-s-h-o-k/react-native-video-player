@@ -47,7 +47,13 @@ public:
         });
     }
 
-    void onBufferUpdated(double bufferedTime, double percentage) override {}
+    void onBufferUpdated(double bufferedTime, double percentage) override {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            ControlLayer *l = layer_;
+            if (!l) return;
+            [l.bottomControlView updateBufferTime:bufferedTime percentage:percentage];
+        });
+    }
     void onMuteChanged(bool isMuted, float volume) override {}
     void onPlaybackRateChanged(float rate) override {}
     void onError(int errorCode, const std::string& message) override {}
@@ -58,12 +64,37 @@ private:
 
 #pragma mark - ControlLayer Implementation
 
+static UIColor *ColorFromHexString(NSString *hexString) {
+  if (!hexString || hexString.length == 0) return nil;
+  NSString *clean = [hexString stringByReplacingOccurrencesOfString:@"#" withString:@""];
+  unsigned int rgbValue = 0;
+  NSScanner *scanner = [NSScanner scannerWithString:clean];
+  [scanner scanHexInt:&rgbValue];
+  if (clean.length == 6) {
+    return [UIColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0
+                           green:((rgbValue & 0x00FF00) >> 8)/255.0
+                            blue:(rgbValue & 0x0000FF)/255.0
+                           alpha:1.0];
+  } else if (clean.length == 8) {
+    return [UIColor colorWithRed:((rgbValue & 0xFF000000) >> 24)/255.0
+                           green:((rgbValue & 0x00FF0000) >> 16)/255.0
+                            blue:((rgbValue & 0x0000FF00) >> 8)/255.0
+                           alpha:((rgbValue & 0x000000FF))/255.0];
+  }
+  return nil;
+}
+
 @interface ControlLayer () {
     PlayerCore::PlayerStateCoordinator *_coordinator;
     std::shared_ptr<ControlLayerObserverImpl> _observer;
+    NSInteger _autoHideTimeoutMs;
+    BOOL _controlsAllowed;
 }
 @property (nonatomic, assign) BOOL controlsVisible;
 @property (nonatomic, strong, nullable) NSTimer *autoHideTimer;
+@property (nonatomic, assign, readwrite) BOOL isFullscreen;
+@property (nonatomic, strong) NSArray<NSLayoutConstraint *> *topSectionConstraints;
+@property (nonatomic, strong) NSArray<NSLayoutConstraint *> *bottomSectionConstraints;
 @end
 
 
@@ -74,6 +105,10 @@ private:
   if (self) {
     _playing = NO;
     _controlsVisible = YES;
+    _autoHideTimeoutMs = 5000;
+    _controlsAllowed = YES;
+    _isFullscreen = NO;
+    _autoAdjustSafeArea = YES;
     self.backgroundColor = UIColor.clearColor;
     self.translatesAutoresizingMaskIntoConstraints = NO;
     [self setupUI:frame];
@@ -97,21 +132,33 @@ private:
     [self.controlsContainerView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
   ]];
 
+  // 1b. Contrast Gradient Scrims (Top & Bottom)
+  self.topGradientLayer = [CAGradientLayer layer];
+  self.topGradientLayer.colors = @[
+    (id)[UIColor colorWithWhite:0.0 alpha:0.65].CGColor,
+    (id)[UIColor clearColor].CGColor
+  ];
+  [self.controlsContainerView.layer insertSublayer:self.topGradientLayer atIndex:0];
+
+  self.bottomGradientLayer = [CAGradientLayer layer];
+  self.bottomGradientLayer.colors = @[
+    (id)[UIColor clearColor].CGColor,
+    (id)[UIColor colorWithWhite:0.0 alpha:0.75].CGColor
+  ];
+  [self.controlsContainerView.layer insertSublayer:self.bottomGradientLayer atIndex:1];
+
   // 2. Background Tap Gesture to Toggle Controls
   UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleBackgroundTap:)];
+  tap.cancelsTouchesInView = NO;
+  tap.delegate = self;
   [self addGestureRecognizer:tap];
   self.userInteractionEnabled = YES;
 
-  // 3. Top Section Slot (Pinned directly to the top edge)
+  // 3. Top Section Slot
   self.topControlView = [[TopSection alloc] initWithFrame:CGRectZero];
   self.topControlView.delegate = self;
   self.topControlView.translatesAutoresizingMaskIntoConstraints = NO;
   [self.controlsContainerView addSubview:self.topControlView];
-  [NSLayoutConstraint activateConstraints:@[
-    [self.topControlView.leadingAnchor constraintEqualToAnchor:self.controlsContainerView.leadingAnchor],
-    [self.topControlView.trailingAnchor constraintEqualToAnchor:self.controlsContainerView.trailingAnchor],
-    [self.topControlView.topAnchor constraintEqualToAnchor:self.controlsContainerView.topAnchor]
-  ]];
 
   // 4. Center Section Slot (Centered horizontally and vertically)
   self.centerControlView = [[CenterSection alloc] initWithFrame:CGRectZero];
@@ -123,18 +170,16 @@ private:
     [self.centerControlView.centerYAnchor constraintEqualToAnchor:self.controlsContainerView.centerYAnchor]
   ]];
 
-  // 5. Bottom Section Slot (Pinned directly to the bottom edge)
+  // 5. Bottom Section Slot
   self.bottomControlView = [[BottomSection alloc] initWithFrame:CGRectZero];
   self.bottomControlView.delegate = self;
   self.bottomControlView.translatesAutoresizingMaskIntoConstraints = NO;
   [self.controlsContainerView addSubview:self.bottomControlView];
-  [NSLayoutConstraint activateConstraints:@[
-    [self.bottomControlView.leadingAnchor constraintEqualToAnchor:self.controlsContainerView.leadingAnchor],
-    [self.bottomControlView.trailingAnchor constraintEqualToAnchor:self.controlsContainerView.trailingAnchor],
-    [self.bottomControlView.bottomAnchor constraintEqualToAnchor:self.controlsContainerView.bottomAnchor]
-  ]];
 
-  // 6. Buffering Spinner (Centered)
+  // 6. Activate dynamic top & bottom constraints based on autoAdjustSafeArea
+  [self updateSectionConstraints];
+
+  // 7. Buffering Spinner (Centered)
   self.bufferingSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleLarge];
   self.bufferingSpinner.color = UIColor.whiteColor;
   self.bufferingSpinner.hidesWhenStopped = YES;
@@ -144,6 +189,51 @@ private:
     [self.bufferingSpinner.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
     [self.bufferingSpinner.centerYAnchor constraintEqualToAnchor:self.centerYAnchor]
   ]];
+}
+
+- (void)updateSectionConstraints {
+  if (self.topSectionConstraints.count > 0) {
+    [NSLayoutConstraint deactivateConstraints:self.topSectionConstraints];
+  }
+  if (self.bottomSectionConstraints.count > 0) {
+    [NSLayoutConstraint deactivateConstraints:self.bottomSectionConstraints];
+  }
+
+  if (self.autoAdjustSafeArea) {
+    self.topSectionConstraints = @[
+      [self.topControlView.leadingAnchor constraintEqualToAnchor:self.controlsContainerView.safeAreaLayoutGuide.leadingAnchor],
+      [self.topControlView.trailingAnchor constraintEqualToAnchor:self.controlsContainerView.safeAreaLayoutGuide.trailingAnchor],
+      [self.topControlView.topAnchor constraintEqualToAnchor:self.controlsContainerView.safeAreaLayoutGuide.topAnchor constant:4.0]
+    ];
+    self.bottomSectionConstraints = @[
+      [self.bottomControlView.leadingAnchor constraintEqualToAnchor:self.controlsContainerView.safeAreaLayoutGuide.leadingAnchor],
+      [self.bottomControlView.trailingAnchor constraintEqualToAnchor:self.controlsContainerView.safeAreaLayoutGuide.trailingAnchor],
+      [self.bottomControlView.bottomAnchor constraintEqualToAnchor:self.controlsContainerView.safeAreaLayoutGuide.bottomAnchor constant:-4.0]
+    ];
+  } else {
+    self.topSectionConstraints = @[
+      [self.topControlView.leadingAnchor constraintEqualToAnchor:self.controlsContainerView.leadingAnchor],
+      [self.topControlView.trailingAnchor constraintEqualToAnchor:self.controlsContainerView.trailingAnchor],
+      [self.topControlView.topAnchor constraintEqualToAnchor:self.controlsContainerView.topAnchor constant:4.0]
+    ];
+    self.bottomSectionConstraints = @[
+      [self.bottomControlView.leadingAnchor constraintEqualToAnchor:self.controlsContainerView.leadingAnchor],
+      [self.bottomControlView.trailingAnchor constraintEqualToAnchor:self.controlsContainerView.trailingAnchor],
+      [self.bottomControlView.bottomAnchor constraintEqualToAnchor:self.controlsContainerView.bottomAnchor constant:-4.0]
+    ];
+  }
+
+  [NSLayoutConstraint activateConstraints:self.topSectionConstraints];
+  [NSLayoutConstraint activateConstraints:self.bottomSectionConstraints];
+}
+
+- (void)setAutoAdjustSafeArea:(BOOL)autoAdjust {
+  if (_autoAdjustSafeArea == autoAdjust) {
+    return;
+  }
+  _autoAdjustSafeArea = autoAdjust;
+  [self updateSectionConstraints];
+  [self setNeedsLayout];
 }
 
 #pragma mark - Coordinator & Player Binding
@@ -232,12 +322,28 @@ private:
 
 - (void)bottomSectionDidTapFullscreen:(BottomSection *)section {
   [self resetAutoHideTimer];
+  BOOL target = !self.isFullscreen;
+  if (self.onFullscreenToggleRequested) {
+    self.onFullscreenToggleRequested(target);
+  }
+}
+
+- (void)setFullscreen:(BOOL)isFullscreen {
+  _isFullscreen = isFullscreen;
+  [self.bottomControlView setFullscreen:isFullscreen];
+}
+
+- (void)setShowFullscreenButton:(BOOL)show {
+  [self.bottomControlView setShowFullscreenButton:show];
 }
 
 #pragma mark - TopSectionDelegate
 
 - (void)topSectionDidTapBack:(TopSection *)section {
   [self resetAutoHideTimer];
+  if (self.isFullscreen && self.onFullscreenToggleRequested) {
+    self.onFullscreenToggleRequested(NO);
+  }
 }
 
 - (void)topSectionDidTapCaptions:(TopSection *)section {
@@ -279,6 +385,30 @@ private:
   [self.player seekToTime:targetTime toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 }
 
+- (void)layoutSubviews {
+  [super layoutSubviews];
+  CGFloat width = self.bounds.size.width;
+  CGFloat height = self.bounds.size.height;
+  CGFloat topInset = self.autoAdjustSafeArea ? self.safeAreaInsets.top : 0.0;
+  CGFloat bottomInset = self.autoAdjustSafeArea ? self.safeAreaInsets.bottom : 0.0;
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  self.topGradientLayer.frame = CGRectMake(0, 0, width, MIN(height * 0.45, MAX(90.0, topInset + 54.0)));
+  self.bottomGradientLayer.frame = CGRectMake(0, MAX(0, height - MAX(100.0, bottomInset + 54.0)), width, MAX(100.0, bottomInset + 54.0));
+  [CATransaction commit];
+}
+
+#pragma mark - UIGestureRecognizerDelegate
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
+  if ([touch.view isKindOfClass:[UIControl class]] ||
+      [touch.view isKindOfClass:[UIButton class]] ||
+      [touch.view isKindOfClass:[UISlider class]]) {
+    return NO;
+  }
+  return YES;
+}
+
 #pragma mark - Visibility & Auto-Hide Lifecycle
 
 - (void)handleBackgroundTap:(UITapGestureRecognizer *)recognizer {
@@ -292,6 +422,7 @@ private:
 - (void)showControlsAnimated:(BOOL)animated {
   [self invalidateAutoHideTimer];
   self.controlsVisible = YES;
+  self.controlsContainerView.hidden = NO;
 
   void (^showBlock)(void) = ^{
     self.controlsContainerView.alpha = 1.0;
@@ -317,9 +448,14 @@ private:
   };
 
   if (animated) {
-    [UIView animateWithDuration:0.25 animations:hideBlock];
+    [UIView animateWithDuration:0.25 animations:hideBlock completion:^(BOOL finished) {
+      if (!self.controlsVisible) {
+        self.controlsContainerView.hidden = YES;
+      }
+    }];
   } else {
     hideBlock();
+    self.controlsContainerView.hidden = YES;
   }
 }
 
@@ -330,9 +466,77 @@ private:
   }
 }
 
+- (void)setIconsJSON:(nullable NSString *)iconsJSON {
+  if (!iconsJSON || iconsJSON.length == 0) return;
+  NSData *data = [iconsJSON dataUsingEncoding:NSUTF8StringEncoding];
+  if (!data) return;
+  NSError *err = nil;
+  NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:data options:0 error:&err];
+  if ([dict isKindOfClass:[NSDictionary class]]) {
+    [self.centerControlView setCustomIcons:dict];
+    [self.bottomControlView setCustomIcons:dict];
+    if (dict[@"back"]) {
+      [self.topControlView.backButton setIconSource:dict[@"back"] fallbackSystemIcon:@"chevron.backward" pointSize:16 weight:UIImageSymbolWeightSemibold];
+    }
+  }
+}
+
+- (void)setAccentColorHex:(nullable NSString *)colorHex {
+  UIColor *c = ColorFromHexString(colorHex);
+  if (c) {
+    [self.bottomControlView setAccentColor:c];
+  }
+}
+
+- (void)setTrackColorHex:(nullable NSString *)colorHex {
+  UIColor *c = ColorFromHexString(colorHex);
+  if (c) {
+    [self.bottomControlView setTrackColor:c];
+  }
+}
+
+- (void)setBufferColorHex:(nullable NSString *)colorHex {
+  UIColor *c = ColorFromHexString(colorHex);
+  if (c) {
+    [self.bottomControlView setBufferColor:c];
+  }
+}
+
+- (void)setSkipIntervalSeconds:(NSInteger)seconds {
+  if (seconds > 0) {
+    [self.centerControlView setSkipInterval:seconds];
+  }
+}
+
+- (void)setShowRewindButton:(BOOL)show {
+  [self.centerControlView setShowRewindButton:show];
+}
+
+- (void)setShowForwardButton:(BOOL)show {
+  [self.centerControlView setShowForwardButton:show];
+}
+
+- (void)setShowPlayPauseButton:(BOOL)show {
+  [self.centerControlView setShowPlayPauseButton:show];
+}
+
+- (void)setAutoHideTimeoutMs:(NSInteger)timeoutMs {
+  _autoHideTimeoutMs = timeoutMs;
+  [self resetAutoHideTimer];
+}
+
+- (void)setControlsVisible:(BOOL)visible {
+  _controlsAllowed = visible;
+  self.hidden = !visible;
+}
+
 - (void)scheduleAutoHideControls {
   [self invalidateAutoHideTimer];
-  self.autoHideTimer = [NSTimer scheduledTimerWithTimeInterval:5.0
+  if (_autoHideTimeoutMs <= 0) {
+    return; // 0 = keep visible indefinitely
+  }
+  NSTimeInterval interval = _autoHideTimeoutMs / 1000.0;
+  self.autoHideTimer = [NSTimer scheduledTimerWithTimeInterval:interval
                                                         target:self
                                                       selector:@selector(autoHideTimerFired:)
                                                       userInfo:nil

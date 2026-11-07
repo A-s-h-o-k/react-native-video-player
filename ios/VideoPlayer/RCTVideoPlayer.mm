@@ -20,8 +20,49 @@
 #import "ControlLayer.h"
 #import "Core/AVPlayerAdapter.h"
 #import "../../cpp/PlayerStateCoordinator.hpp"
+#import "OrientationManager.h"
 
 using namespace facebook::react;
+
+#pragma mark - Orientation Manager Implementation
+
+static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrientationMaskPortrait;
+
+@implementation OrientationManager
+
++ (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+  return sSupportedOrientationMask;
+}
+
++ (void)setSupportedInterfaceOrientations:(UIInterfaceOrientationMask)mask {
+  sSupportedOrientationMask = mask;
+}
+
+@end
+
+#pragma mark - Fullscreen Container View
+
+@interface FullscreenPlayerContainerView : UIView
+@property (nonatomic, weak) AVPlayerLayer *playerLayer;
+@property (nonatomic, assign) BOOL autoAdjustSafeArea;
+@end
+
+@implementation FullscreenPlayerContainerView
+
+- (void)layoutSubviews {
+  [super layoutSubviews];
+  if (self.playerLayer) {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    UIEdgeInsets insets = self.autoAdjustSafeArea ? self.safeAreaInsets : UIEdgeInsetsZero;
+    self.playerLayer.frame = UIEdgeInsetsInsetRect(self.bounds, insets);
+    [CATransaction commit];
+  }
+}
+
+@end
+
+#pragma mark - RCTVideoPlayer
 
 @interface RCTVideoPlayer () <RCTVideoPlayerViewProtocol> {
     std::unique_ptr<PlayerCore::PlayerStateCoordinator> _coordinator;
@@ -34,6 +75,11 @@ using namespace facebook::react;
 @property (nonatomic, copy, nullable) NSString *currentVideoUrl;
 @property (nonatomic, copy, nullable) NSDictionary<NSString *, NSString *> *headers;
 @property (nonatomic, copy, nullable) NSDictionary<NSString *, id> *drmConfig;
+@property (nonatomic, strong, nullable) FullscreenPlayerContainerView *fullscreenContainerView;
+@property (nonatomic, assign) BOOL isFullscreenActive;
+@property (nonatomic, assign) BOOL isFullscreenTransitioning;
+@property (nonatomic, assign) BOOL autoAdjustSafeArea;
+@property (nonatomic, strong, nullable) NSArray<NSLayoutConstraint *> *controlsConstraints;
 
 @end
 
@@ -53,17 +99,18 @@ using namespace facebook::react;
     _props = defaultProps;
 
     self.backgroundColor = UIColor.blackColor;
+    _autoAdjustSafeArea = YES;
     _coordinator = std::make_unique<PlayerCore::PlayerStateCoordinator>();
   }
   return self;
 }
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps {
-  const auto &oldViewProps = *std::static_pointer_cast<VideoPlayerProps const>(_props);
   const auto &newViewProps = *std::static_pointer_cast<VideoPlayerProps const>(props);
+  const auto *oldViewPropsPtr = oldProps ? std::static_pointer_cast<VideoPlayerProps const>(oldProps).get() : nullptr;
 
   // 1. Headers Update
-  if (oldViewProps.headers != newViewProps.headers || !self.headers) {
+  if (!oldViewPropsPtr || oldViewPropsPtr->headers != newViewProps.headers || !self.headers) {
     if (!newViewProps.headers.empty()) {
       NSData *data = [NSData dataWithBytes:newViewProps.headers.data() length:newViewProps.headers.size()];
       id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -76,7 +123,7 @@ using namespace facebook::react;
   }
 
   // 2. DRM Config Update
-  if (oldViewProps.drm != newViewProps.drm || !self.drmConfig) {
+  if (!oldViewPropsPtr || oldViewPropsPtr->drm != newViewProps.drm || !self.drmConfig) {
     if (!newViewProps.drm.empty()) {
       NSData *data = [NSData dataWithBytes:newViewProps.drm.data() length:newViewProps.drm.size()];
       id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -88,18 +135,19 @@ using namespace facebook::react;
     }
   }
 
-  // 3. Video URL Update - reload if player is nil (e.g., after unmount / recycle) or URL changed
-  BOOL needsLoadVideo = (!self.player || oldViewProps.videoUrl != newViewProps.videoUrl) && !newViewProps.videoUrl.empty();
+  // 3. Video URL Update - ONLY load video if URL actually changed or player is uninitialized
+  NSString *newUrlStr = [NSString stringWithUTF8String:newViewProps.videoUrl.c_str()];
+  BOOL urlChanged = ![_currentVideoUrl isEqualToString:newUrlStr];
+  BOOL needsLoadVideo = (!self.player || urlChanged) && !newViewProps.videoUrl.empty();
   if (needsLoadVideo) {
-    NSString *urlStr = [NSString stringWithUTF8String:newViewProps.videoUrl.c_str()];
-    [self loadVideoURLString:urlStr];
+    [self loadVideoURLString:newUrlStr];
   } else if (self.adapter) {
     [self.adapter configureHeaders:self.headers drmConfig:self.drmConfig];
   }
 
   // 4. Play / Pause prop
   if (_coordinator) {
-    if (oldViewProps.play != newViewProps.play || needsLoadVideo) {
+    if (!oldViewPropsPtr || oldViewPropsPtr->play != newViewProps.play || needsLoadVideo) {
       if (newViewProps.play) {
         _coordinator->requestPlay();
       } else {
@@ -109,18 +157,18 @@ using namespace facebook::react;
   }
 
   // 5. Direct SeekTo prop
-  if (oldViewProps.seekTo != newViewProps.seekTo && newViewProps.seekTo >= 0 && _coordinator) {
+  if (oldViewPropsPtr && oldViewPropsPtr->seekTo != newViewProps.seekTo && newViewProps.seekTo >= 0 && _coordinator) {
     _coordinator->requestSeek((double)newViewProps.seekTo);
   }
 
   // 6. Video Title Update
-  if (self.controlsLayer && (oldViewProps.title != newViewProps.title || needsLoadVideo)) {
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->title != newViewProps.title || needsLoadVideo)) {
     NSString *titleStr = [NSString stringWithUTF8String:newViewProps.title.c_str()];
     [self.controlsLayer setTitle:titleStr];
   }
 
   // 7. Video Gravity / ResizeMode Update
-  if (oldViewProps.resizeMode != newViewProps.resizeMode || needsLoadVideo) {
+  if (!oldViewPropsPtr || oldViewPropsPtr->resizeMode != newViewProps.resizeMode || needsLoadVideo) {
     if (newViewProps.resizeMode == "cover") {
       self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     } else if (newViewProps.resizeMode == "stretch") {
@@ -130,7 +178,109 @@ using namespace facebook::react;
     }
   }
 
+  // 8. Fullscreen button display prop
+  if (!oldViewPropsPtr || oldViewPropsPtr->showFullscreenButton != newViewProps.showFullscreenButton || needsLoadVideo) {
+    [self.controlsLayer setShowFullscreenButton:newViewProps.showFullscreenButton];
+  }
+
+  // 9. Fullscreen prop update - ONLY if explicitly specified and changed by consumer in JS props
+  if (oldViewPropsPtr && oldViewPropsPtr->fullscreen != newViewProps.fullscreen) {
+    [self setFullscreenMode:newViewProps.fullscreen notifyJS:NO];
+  }
+
+  // 10. Auto adjust safe area prop update
+  if (!oldViewPropsPtr || oldViewPropsPtr->autoAdjustSafeArea != newViewProps.autoAdjustSafeArea || needsLoadVideo) {
+    [self setAutoAdjustSafeAreaMode:newViewProps.autoAdjustSafeArea];
+  }
+
+  // 11. Custom Icons JSON
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->icons != newViewProps.icons || needsLoadVideo)) {
+    if (!newViewProps.icons.empty()) {
+      NSString *iconsStr = [NSString stringWithUTF8String:newViewProps.icons.c_str()];
+      [self.controlsLayer setIconsJSON:iconsStr];
+    }
+  }
+
+  // 12. Colors (accent, track, buffer)
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->accentColor != newViewProps.accentColor || needsLoadVideo)) {
+    if (!newViewProps.accentColor.empty()) {
+      NSString *colorStr = [NSString stringWithUTF8String:newViewProps.accentColor.c_str()];
+      [self.controlsLayer setAccentColorHex:colorStr];
+    }
+  }
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->trackColor != newViewProps.trackColor || needsLoadVideo)) {
+    if (!newViewProps.trackColor.empty()) {
+      NSString *colorStr = [NSString stringWithUTF8String:newViewProps.trackColor.c_str()];
+      [self.controlsLayer setTrackColorHex:colorStr];
+    }
+  }
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->bufferColor != newViewProps.bufferColor || needsLoadVideo)) {
+    if (!newViewProps.bufferColor.empty()) {
+      NSString *colorStr = [NSString stringWithUTF8String:newViewProps.bufferColor.c_str()];
+      [self.controlsLayer setBufferColorHex:colorStr];
+    }
+  }
+
+  // 13. Skip interval & Button visibility
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->skipInterval != newViewProps.skipInterval || needsLoadVideo)) {
+    [self.controlsLayer setSkipIntervalSeconds:newViewProps.skipInterval];
+  }
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->showRewindButton != newViewProps.showRewindButton || needsLoadVideo)) {
+    [self.controlsLayer setShowRewindButton:newViewProps.showRewindButton];
+  }
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->showForwardButton != newViewProps.showForwardButton || needsLoadVideo)) {
+    [self.controlsLayer setShowForwardButton:newViewProps.showForwardButton];
+  }
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->showPlayPauseButton != newViewProps.showPlayPauseButton || needsLoadVideo)) {
+    [self.controlsLayer setShowPlayPauseButton:newViewProps.showPlayPauseButton];
+  }
+
+  // 14. Auto-hide timeout & Controls visibility
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->autoHideTimeout != newViewProps.autoHideTimeout || needsLoadVideo)) {
+    [self.controlsLayer setAutoHideTimeoutMs:newViewProps.autoHideTimeout];
+  }
+  if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->controls != newViewProps.controls || needsLoadVideo)) {
+    [self.controlsLayer setControlsVisible:newViewProps.controls];
+  }
+
   [super updateProps:props oldProps:oldProps];
+}
+
+- (void)setAutoAdjustSafeAreaMode:(BOOL)autoAdjust {
+  _autoAdjustSafeArea = autoAdjust;
+  [self.controlsLayer setAutoAdjustSafeArea:autoAdjust];
+  if (self.fullscreenContainerView) {
+    self.fullscreenContainerView.autoAdjustSafeArea = autoAdjust;
+    [self.fullscreenContainerView setNeedsLayout];
+  }
+  [self updateControlsConstraints];
+  [self setNeedsLayout];
+}
+
+- (void)updateControlsConstraints {
+  if (self.controlsConstraints.count > 0) {
+    [NSLayoutConstraint deactivateConstraints:self.controlsConstraints];
+  }
+  if (!self.controlsLayer || self.controlsLayer.superview != self) {
+    return;
+  }
+  self.controlsLayer.translatesAutoresizingMaskIntoConstraints = NO;
+  if (self.autoAdjustSafeArea) {
+    self.controlsConstraints = @[
+      [self.controlsLayer.leadingAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.leadingAnchor],
+      [self.controlsLayer.trailingAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.trailingAnchor],
+      [self.controlsLayer.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor],
+      [self.controlsLayer.bottomAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.bottomAnchor]
+    ];
+  } else {
+    self.controlsConstraints = @[
+      [self.controlsLayer.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
+      [self.controlsLayer.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
+      [self.controlsLayer.topAnchor constraintEqualToAnchor:self.topAnchor],
+      [self.controlsLayer.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
+    ];
+  }
+  [NSLayoutConstraint activateConstraints:self.controlsConstraints];
 }
 
 - (void)loadVideoURLString:(NSString *)urlString {
@@ -173,15 +323,41 @@ using namespace facebook::react;
   self.controlsLayer = [[ControlLayer alloc] initWithFrame:self.bounds];
   [self.controlsLayer setCoordinator:_coordinator.get()];
   [self.controlsLayer setVideoPlayer:self.player];
+  [self.controlsLayer setAutoAdjustSafeArea:self.autoAdjustSafeArea];
   self.controlsLayer.layer.zPosition = 1;
   [self addSubview:self.controlsLayer];
 
-  [NSLayoutConstraint activateConstraints:@[
-    [self.controlsLayer.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
-    [self.controlsLayer.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
-    [self.controlsLayer.topAnchor constraintEqualToAnchor:self.topAnchor],
-    [self.controlsLayer.bottomAnchor constraintEqualToAnchor:self.bottomAnchor]
-  ]];
+  [self updateControlsConstraints];
+
+  __weak RCTVideoPlayer *weakSelf = self;
+  self.controlsLayer.onFullscreenToggleRequested = ^(BOOL isFullscreen) {
+    [weakSelf setFullscreenMode:isFullscreen notifyJS:YES];
+  };
+  [self.controlsLayer setFullscreen:props.fullscreen];
+  [self.controlsLayer setShowFullscreenButton:props.showFullscreenButton];
+
+  if (!props.icons.empty()) {
+    [self.controlsLayer setIconsJSON:[NSString stringWithUTF8String:props.icons.c_str()]];
+  }
+  if (!props.accentColor.empty()) {
+    [self.controlsLayer setAccentColorHex:[NSString stringWithUTF8String:props.accentColor.c_str()]];
+  }
+  if (!props.trackColor.empty()) {
+    [self.controlsLayer setTrackColorHex:[NSString stringWithUTF8String:props.trackColor.c_str()]];
+  }
+  if (!props.bufferColor.empty()) {
+    [self.controlsLayer setBufferColorHex:[NSString stringWithUTF8String:props.bufferColor.c_str()]];
+  }
+  if (props.skipInterval > 0) {
+    [self.controlsLayer setSkipIntervalSeconds:props.skipInterval];
+  }
+  [self.controlsLayer setShowRewindButton:props.showRewindButton];
+  [self.controlsLayer setShowForwardButton:props.showForwardButton];
+  [self.controlsLayer setShowPlayPauseButton:props.showPlayPauseButton];
+  if (props.autoHideTimeout > 0) {
+    [self.controlsLayer setAutoHideTimeoutMs:props.autoHideTimeout];
+  }
+  [self.controlsLayer setControlsVisible:props.controls];
 
   if (!props.title.empty()) {
     [self.controlsLayer setTitle:[NSString stringWithUTF8String:props.title.c_str()]];
@@ -191,6 +367,158 @@ using namespace facebook::react;
   }
 
   [self emitResult:@"success"];
+}
+
+- (UIViewController *)findTopViewController {
+  UIWindow *keyWindow = nil;
+  for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+    if ([scene isKindOfClass:[UIWindowScene class]] && scene.activationState == UISceneActivationStateForegroundActive) {
+      UIWindowScene *windowScene = (UIWindowScene *)scene;
+      for (UIWindow *w in windowScene.windows) {
+        if (w.isKeyWindow) { keyWindow = w; break; }
+      }
+      if (keyWindow) break;
+    }
+  }
+  if (!keyWindow) {
+    keyWindow = self.window ?: [UIApplication sharedApplication].delegate.window;
+  }
+  UIViewController *top = keyWindow.rootViewController;
+  while (top.presentedViewController) {
+    top = top.presentedViewController;
+  }
+  return top;
+}
+
+- (void)setFullscreenMode:(BOOL)isFullscreen notifyJS:(BOOL)notifyJS {
+  if (self.isFullscreenActive == isFullscreen || self.isFullscreenTransitioning) {
+    return;
+  }
+  self.isFullscreenTransitioning = YES;
+  [self.controlsLayer setFullscreen:isFullscreen];
+
+  if (isFullscreen) {
+    UIViewController *topVC = [self findTopViewController];
+    if (!topVC) {
+      self.isFullscreenTransitioning = NO;
+      return;
+    }
+
+    self.isFullscreenActive = YES;
+    [OrientationManager setSupportedInterfaceOrientations:UIInterfaceOrientationMaskLandscape];
+    [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationFade];
+
+    // 1. Create Fullscreen Container View pinned to topVC.view bounds
+    FullscreenPlayerContainerView *container = [[FullscreenPlayerContainerView alloc] initWithFrame:topVC.view.bounds];
+    container.backgroundColor = [UIColor blackColor];
+    container.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    container.layer.zPosition = 9999;
+    container.autoAdjustSafeArea = self.autoAdjustSafeArea;
+    self.fullscreenContainerView = container;
+
+    // 2. Reparent playerLayer and controlsLayer into fullscreen container
+    [self.playerLayer removeFromSuperlayer];
+    UIEdgeInsets fsInsets = self.autoAdjustSafeArea ? container.safeAreaInsets : UIEdgeInsetsZero;
+    self.playerLayer.frame = UIEdgeInsetsInsetRect(container.bounds, fsInsets);
+    container.playerLayer = self.playerLayer;
+    [container.layer addSublayer:self.playerLayer];
+
+    [self.controlsLayer removeFromSuperview];
+    self.controlsLayer.frame = container.bounds;
+    [container addSubview:self.controlsLayer];
+
+    self.controlsLayer.translatesAutoresizingMaskIntoConstraints = NO;
+    if (self.autoAdjustSafeArea) {
+      [NSLayoutConstraint activateConstraints:@[
+        [self.controlsLayer.leadingAnchor constraintEqualToAnchor:container.safeAreaLayoutGuide.leadingAnchor],
+        [self.controlsLayer.trailingAnchor constraintEqualToAnchor:container.safeAreaLayoutGuide.trailingAnchor],
+        [self.controlsLayer.topAnchor constraintEqualToAnchor:container.safeAreaLayoutGuide.topAnchor],
+        [self.controlsLayer.bottomAnchor constraintEqualToAnchor:container.safeAreaLayoutGuide.bottomAnchor]
+      ]];
+    } else {
+      [NSLayoutConstraint activateConstraints:@[
+        [self.controlsLayer.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [self.controlsLayer.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [self.controlsLayer.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [self.controlsLayer.bottomAnchor constraintEqualToAnchor:container.bottomAnchor]
+      ]];
+    }
+
+    [topVC.view addSubview:container];
+
+    // 3. Request Landscape Orientation (Single OS window scene rotation)
+    if (@available(iOS 16.0, *)) {
+      [topVC setNeedsUpdateOfSupportedInterfaceOrientations];
+      UIWindowScene *scene = (UIWindowScene *)topVC.view.window.windowScene ?: (UIWindowScene *)self.window.windowScene;
+      if (scene) {
+        UIWindowSceneGeometryPreferencesIOS *preferences = [[UIWindowSceneGeometryPreferencesIOS alloc] initWithInterfaceOrientations:UIInterfaceOrientationMaskLandscape];
+        [scene requestGeometryUpdateWithPreferences:preferences errorHandler:nil];
+      }
+    } else {
+      [[UIDevice currentDevice] setValue:@(UIInterfaceOrientationLandscapeRight) forKey:@"orientation"];
+      [UIViewController attemptRotationToDeviceOrientation];
+    }
+
+    __weak RCTVideoPlayer *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+      RCTVideoPlayer *strongSelf = weakSelf;
+      if (strongSelf) {
+        strongSelf.isFullscreenTransitioning = NO;
+      }
+    });
+  } else {
+    self.isFullscreenActive = NO;
+    [OrientationManager setSupportedInterfaceOrientations:UIInterfaceOrientationMaskPortrait];
+    [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationFade];
+
+    UIViewController *topVC = [self findTopViewController];
+    if (@available(iOS 16.0, *)) {
+      if (topVC) {
+        [topVC setNeedsUpdateOfSupportedInterfaceOrientations];
+      }
+      UIWindowScene *scene = (UIWindowScene *)topVC.view.window.windowScene ?: (UIWindowScene *)self.window.windowScene;
+      if (scene) {
+        UIWindowSceneGeometryPreferencesIOS *preferences = [[UIWindowSceneGeometryPreferencesIOS alloc] initWithInterfaceOrientations:UIInterfaceOrientationMaskPortrait];
+        [scene requestGeometryUpdateWithPreferences:preferences errorHandler:nil];
+      }
+    } else {
+      [[UIDevice currentDevice] setValue:@(UIInterfaceOrientationPortrait) forKey:@"orientation"];
+      [UIViewController attemptRotationToDeviceOrientation];
+    }
+
+    __weak RCTVideoPlayer *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+      RCTVideoPlayer *strongSelf = weakSelf;
+      if (!strongSelf) return;
+
+      if (strongSelf.fullscreenContainerView) {
+        [strongSelf.playerLayer removeFromSuperlayer];
+        UIEdgeInsets insets = strongSelf.autoAdjustSafeArea ? strongSelf.safeAreaInsets : UIEdgeInsetsZero;
+        strongSelf.playerLayer.frame = UIEdgeInsetsInsetRect(strongSelf.bounds, insets);
+        [strongSelf.layer addSublayer:strongSelf.playerLayer];
+
+        [strongSelf.controlsLayer removeFromSuperview];
+        strongSelf.controlsLayer.frame = strongSelf.bounds;
+        [strongSelf addSubview:strongSelf.controlsLayer];
+
+        [strongSelf updateControlsConstraints];
+
+        [strongSelf.fullscreenContainerView removeFromSuperview];
+        strongSelf.fullscreenContainerView = nil;
+      }
+
+      [strongSelf setNeedsLayout];
+      [strongSelf layoutIfNeeded];
+      strongSelf.isFullscreenTransitioning = NO;
+    });
+  }
+
+  if (notifyJS && _eventEmitter) {
+    auto videoPlayerEventEmitter = std::static_pointer_cast<VideoPlayerEventEmitter const>(_eventEmitter);
+    VideoPlayerEventEmitter::OnFullscreenChange event;
+    event.isFullscreen = isFullscreen;
+    videoPlayerEventEmitter->onFullscreenChange(event);
+  }
 }
 
 - (void)emitResult:(NSString *)result {
@@ -204,13 +532,51 @@ using namespace facebook::react;
   }
 }
 
+- (void)safeAreaInsetsDidChange {
+  [super safeAreaInsetsDidChange];
+  [self setNeedsLayout];
+}
+
 - (void)layoutSubviews {
   [super layoutSubviews];
-  self.playerLayer.frame = self.bounds;
-  self.controlsLayer.frame = self.bounds;
+  if (!self.isFullscreenActive) {
+    UIEdgeInsets insets = self.autoAdjustSafeArea ? self.safeAreaInsets : UIEdgeInsetsZero;
+    CGRect safeBounds = UIEdgeInsetsInsetRect(self.bounds, insets);
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    self.playerLayer.frame = safeBounds;
+    [CATransaction commit];
+  }
 }
 
 - (void)cleanup {
+  if (self.isFullscreenActive) {
+    [OrientationManager setSupportedInterfaceOrientations:UIInterfaceOrientationMaskPortrait];
+    [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationNone];
+    UIViewController *topVC = [self findTopViewController];
+    if (@available(iOS 16.0, *)) {
+      if (topVC) {
+        [topVC setNeedsUpdateOfSupportedInterfaceOrientations];
+        UIWindowScene *scene = (UIWindowScene *)topVC.view.window.windowScene ?: (UIWindowScene *)self.window.windowScene;
+        if (scene) {
+          UIWindowSceneGeometryPreferencesIOS *preferences = [[UIWindowSceneGeometryPreferencesIOS alloc] initWithInterfaceOrientations:UIInterfaceOrientationMaskPortrait];
+          [scene requestGeometryUpdateWithPreferences:preferences errorHandler:nil];
+        }
+      }
+    } else {
+      [[UIDevice currentDevice] setValue:@(UIInterfaceOrientationPortrait) forKey:@"orientation"];
+    }
+
+    if (self.fullscreenContainerView) {
+      [self.playerLayer removeFromSuperlayer];
+      [self.controlsLayer removeFromSuperview];
+      [self.fullscreenContainerView removeFromSuperview];
+      self.fullscreenContainerView = nil;
+    }
+    self.isFullscreenActive = NO;
+    self.isFullscreenTransitioning = NO;
+  }
+
   if (self.adapter) {
     [self.adapter cleanup];
     self.adapter = nil;

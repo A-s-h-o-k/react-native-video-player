@@ -184,6 +184,9 @@ public:
 - **End Notification**: Subscribes to `AVPlayerItemDidPlayToEndTimeNotification` on the exact `observedItem`.
 - **Safe Teardown & View Recycling**: Idempotent `cleanup` method with `_isCleanedUp` guard preventing double-teardown when views are recycled or deallocated. Fabric `prepareForRecycle` resets cached props to `defaultProps` so recycled views reload when re-attached.
 - **Observer Attachment Sequence**: In `loadURL:`, `attachItemObservers:` executes strictly *after* `attachPlayer:` / `replaceCurrentItemWithPlayerItem:` to ensure player attachment teardown does not inadvertently strip fresh item observers.
+- **Buffer Progress & Forward Cap**: Scans `loadedTimeRanges` for the active playhead segment to ensure accurate buffer reporting even after forward seeking, throttles dispatches by 0.5s delta to prevent mutex contention, and sets `preferredForwardBufferDuration = 30.0` to conserve memory and cellular data.
+- **Low-Latency Live & Access Log Telemetry**: Sets `automaticallyPreservesTimeOffsetFromLive = YES` and `configuredTimeOffsetFromLive = 2.0` on iOS 13+. Observes `AVPlayerItemNewAccessLogEntryNotification` to extract chunk RTT/ping and observed bitrate, notifying `PlayerStateCoordinator.notifyEngineNetworkMetrics()`.
+- **Timed In-Stream Metadata**: Attaches `AVPlayerItemMetadataOutput` to `AVPlayerItem` delivering parsed ID3 and chapter metadata via `AVPlayerItemMetadataOutputPushDelegate`.
 - **Aspect Ratio & Resize Modes**: Maps `resizeMode` prop to `AVPlayerLayer.videoGravity`:
   - `"contain"` $\rightarrow$ `AVLayerVideoGravityResizeAspect` (fit inside frame, centered with black letterbox bars).
   - `"cover"` $\rightarrow$ `AVLayerVideoGravityResizeAspectFill` (crop to fill entire frame).
@@ -191,6 +194,12 @@ public:
 
 ### Android / Android TV (`ExoPlayerAdapter` / `BasePlayer`)
 - Wraps an `androidx.media3.exoplayer.ExoPlayer` and `androidx.media3.ui.PlayerView`.
+- **Default Controller Suppression**: Initializes `PlayerView.useController = false` and `PlayerView.controllerAutoShow = false` upon instantiation in `init` to guarantee Media3's built-in playback controls never flash or leak when the view is mounted to `ReactVideoPlayer`.
+- **Load Control & Buffer Thresholds**: Configures `DefaultLoadControl` with 15,000ms min buffer target, 30,000ms max buffer ceiling, 1,000ms preroll to start/seek (fast TTFF), 3,000ms rebuffer threshold, and `setPrioritizeTimeOverSizeThresholds(true)` for memory safety on low-RAM TV sticks.
+- **Low-Latency Live Edge Configuration**: Configures `MediaItem.LiveConfiguration` with 2,000ms target offset and dynamic catch-up speeds (0.97x–1.05x).
+- **Network Telemetry & Analytics Listener**: Uses `AnalyticsListener.onLoadCompleted` to measure chunk transfer ping/RTT in ms and throughput in bps.
+- **Timed In-Stream Metadata**: Intercepts `Player.Listener.onMetadata` to receive parsed ID3 tags and SCTE-35 ad cue markers.
+- **Buffer Progress Forwarding**: Periodically polls `player.bufferedPosition` and forwards updates to `PlayerStateCoordinator.notifyEngineBuffer()` for dual-track scrubber rendering.
 - **Aspect Ratio & Resize Modes**: Maps `resizeMode` prop to `PlayerView.resizeMode`:
   - `"contain"` $\rightarrow$ `AspectRatioFrameLayout.RESIZE_MODE_FIT` (centered with black background letterbox bars).
   - `"cover"` $\rightarrow$ `AspectRatioFrameLayout.RESIZE_MODE_ZOOM` (fill entire frame, crop overflow).
@@ -219,5 +228,5 @@ public:
 
 - [x] **Shared C++ Coordinator Core (`cpp/`)**: Fully implemented in [PlayerStateCoordinator.cpp](file:///Users/ashokammineni/video-player/new_2/Player/cpp/PlayerStateCoordinator.cpp), thread-safe with `std::mutex`, zero UI dependencies.
 - [x] **iOS AVPlayer Adapter (`AVPlayerAdapter.mm`)**: Fully implemented, registered in `project.pbxproj`, and verified with `xcodebuild` (Exit code 0).
-- [x] **Android Media3 ExoPlayer Adapter (`BasePlayer.kt`)**: Fully implemented base ExoPlayer wrapper with `onPlaybackStateListener` callbacks dispatched to `ControlLayer.kt` and `ReactVideoPlayer.kt`.
+- [x] **Android Media3 ExoPlayer Adapter (`BasePlayer.kt`)**: Fully implemented base ExoPlayer wrapper with `onPlaybackStateListener` callbacks dispatched to `ControlLayer.kt` and `ReactVideoPlayer.kt`, and `onVideoSizeChangedListener` forwarding to resolve React Native Fabric layout suppression upon initial frame decode.
 

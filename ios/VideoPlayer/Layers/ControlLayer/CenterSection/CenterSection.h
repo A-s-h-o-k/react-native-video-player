@@ -26,6 +26,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, weak, nullable) id<CenterSectionDelegate> delegate;
 
+/** Skip seek interval in seconds (default: 15.0) */
+@property (nonatomic, assign) NSTimeInterval skipInterval;
+
+/** Custom icons map */
+@property (nonatomic, copy, nullable) NSDictionary<NSString *, NSString *> *customIcons;
+
+/** Visibility controls */
+- (void)setShowRewindButton:(BOOL)show;
+- (void)setShowForwardButton:(BOOL)show;
+- (void)setShowPlayPauseButton:(BOOL)show;
+
 /** Updates play/pause button icon and accessibility label */
 - (void)setPlaying:(BOOL)playing;
 

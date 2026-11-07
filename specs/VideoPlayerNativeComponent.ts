@@ -10,6 +10,10 @@ type VideoPlayer = {
   result: 'success' | 'error';
 };
 
+type FullscreenChangeEvent = {
+  isFullscreen: boolean;
+};
+
 export interface NativeProps extends ViewProps {
   videoUrl: string;
   title?: string;
@@ -25,6 +29,20 @@ export interface NativeProps extends ViewProps {
   headers?: string;
   drm?: string;
   resizeMode?: string;
+  fullscreen?: boolean;
+  showFullscreenButton?: boolean;
+  autoAdjustSafeArea?: boolean;
+  icons?: string;
+  accentColor?: string;
+  trackColor?: string;
+  bufferColor?: string;
+  skipInterval?: Int32;
+  showRewindButton?: boolean;
+  showForwardButton?: boolean;
+  showPlayPauseButton?: boolean;
+  autoHideTimeout?: Int32;
+  controls?: boolean;
+  onFullscreenChange?: CodegenTypes.BubblingEventHandler<FullscreenChangeEvent> | null;
 }
 
 export default codegenNativeComponent<NativeProps>(

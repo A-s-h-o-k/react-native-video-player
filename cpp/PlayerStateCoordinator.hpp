@@ -57,6 +57,7 @@ public:
     void notifyEngineTime(double currentTime);
     void notifyEngineDuration(double duration);
     void notifyEngineBuffer(double bufferedTime);
+    void notifyEngineNetworkMetrics(double pingMs, double bandwidthBitrateBps);
     void notifyEngineError(int errorCode, const std::string& message);
 
 private:

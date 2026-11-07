@@ -146,7 +146,19 @@ Specialized playback buttons either **subclass** `CommonButton` or **contain** `
 
 ## 7. Implementation Checklist for Phase 2
 
-- [ ] Write [CommonButton.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Common/CommonButton.h) & [CommonButton.m](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Common/CommonButton.m) (iOS / tvOS).
-- [ ] Write `CommonButton.kt` in `android/app/src/main/java/com/player/ui/common/` (Android / Android TV).
-- [ ] Refactor [CenterSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/CenterSection/CenterSection.mm) to replace duplicate button creation code with `CommonButton`.
-- [ ] Connect `CommonButton` to tvOS focus and TalkBack/VoiceOver testing.
+- [x] Write [CommonButton.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Common/CommonButton.h) & [CommonButton.m](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Common/CommonButton.m) (iOS / tvOS).
+- [x] Write `CommonButton.kt` in `android/app/src/main/java/com/player/ui/common/` (Android / Android TV).
+- [x] Refactor [CenterSection.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Layers/ControlLayer/CenterSection/CenterSection.mm) to replace duplicate button creation code with `CommonButton`.
+- [x] Connect `CommonButton` to tvOS focus and TalkBack/VoiceOver testing.
+
+---
+
+## 8. Custom Icon Replacement & Scrubber Notch Architecture (v1.0.0)
+
+Both iOS (`CommonButton.m`) and Android (`CommonButton.kt`) support custom icon replacement with fallback system icons:
+
+### Icon Resolution Hierarchy:
+1. **Local File / Asset Catalog URI**: `file://...` or standard bundle resource resolved at build time via `Image.resolveAssetSource()`.
+2. **SF Symbol / Drawable Resource**: String names matching platform system icons (e.g. `play.fill`, `ic_media_play`).
+3. **Remote HTTP/HTTPS URL**: Fetched asynchronously on background threads without blocking main UI.
+4. **Slider Scrubber Notch (Thumb)**: Replaces standard circle notch via `UISlider.setThumbImage:forState:` on iOS and `SeekBar.thumb = drawable` on Android. Tinting is handled via `accentColor` (`tintColor` / `thumbTintList`).

@@ -150,6 +150,40 @@ class CommonButton @JvmOverloads constructor(
         }
     }
 
+    /** Sets icon from local file, remote URL, drawable resource name, or system fallback */
+    fun setIconSource(iconSource: String?, fallbackResId: Int) {
+        if (!iconSource.isNullOrEmpty()) {
+            if (iconSource.startsWith("file://") || iconSource.startsWith("/")) {
+                val cleanPath = iconSource.removePrefix("file://")
+                val bmp = android.graphics.BitmapFactory.decodeFile(cleanPath)
+                if (bmp != null) {
+                    setImageBitmap(bmp)
+                    return
+                }
+            } else if (iconSource.startsWith("http://") || iconSource.startsWith("https://")) {
+                Thread {
+                    try {
+                        val stream = java.net.URL(iconSource).openStream()
+                        val bmp = android.graphics.BitmapFactory.decodeStream(stream)
+                        if (bmp != null) {
+                            post { setImageBitmap(bmp) }
+                        }
+                    } catch (e: Exception) {
+                        post { setImageResource(fallbackResId) }
+                    }
+                }.start()
+                return
+            } else {
+                val resId = context.resources.getIdentifier(iconSource, "drawable", context.packageName)
+                if (resId != 0) {
+                    setImageResource(resId)
+                    return
+                }
+            }
+        }
+        setImageResource(fallbackResId)
+    }
+
     private fun dpToPx(dp: Int): Int {
         return TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,

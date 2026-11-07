@@ -59,6 +59,15 @@ All props are passed directly to `<VideoPlayer />` in JSX:
 | **`iconSize`** | `number` | `48` | No | Custom base dimension for control button icons. |
 | **`headers`** | `Record<string, string>` | — | No | Custom HTTP request headers (e.g. `Authorization: "Bearer ..."`), automatically attached to manifest and chunk requests. |
 | **`drm`** | `DrmOptions` | — | No | Hardware DRM configuration for Apple FairPlay Streaming (iOS/tvOS) or Google Widevine Modular (Android/Fire TV). |
+| **`readFromJson`** | `boolean` | `false` | No | Auto-load theme, icons, and behavior directly from the bundled `default-player-config.json` with zero runtime latency. |
+| **`config`** | `PlayerConfig` | — | No | Declarative JSON design tokens object configuring `theme`, `icons`, and `behavior`. |
+| **`icons`** | `PlayerIcons` | — | No | Complete icon replacement map (local assets, SF Symbols, drawables, or remote URLs) for play, pause, replay, rewind, forward, fullscreen, and slider thumb notch. |
+| **`accentColor`** | `string` | `"#FFFFFF"` | No | Custom brand color for the scrubber slider notch (thumb) and active timeline progress track. |
+| **`trackColor`** | `string` | `rgba(...)` | No | Background timeline track color. |
+| **`bufferColor`** | `string` | `rgba(...)` | No | Buffered video chunks progress bar color. |
+| **`skipInterval`** | `number` | `15` | No | Seek step interval in seconds for rewind and forward buttons (e.g. `10` or `30`). |
+| **`autoHideTimeout`**| `number` | `5000` | No | Inactivity auto-hide delay in milliseconds (0 = always visible). |
+| **`controls`** | `boolean` | `true` | No | Whether to render the native control overlay. Set `false` for headless playback. |
 
 ---
 
@@ -264,6 +273,60 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   player: { width: '100%', height: 260 },
 });
+```
+
+---
+
+### Recipe 7: Declarative JSON Theming, Replaceable Icons & Custom Scrubber Notch
+
+You can skin the entire player natively using either the bundled configuration or a custom design token object:
+
+#### Option A: Auto-Skin with Bundled Config (`readFromJson={true}`)
+```tsx
+<VideoPlayer
+  videoUrl="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+  title="Bundled JSON Skinning"
+  readFromJson={true}
+/>
+```
+
+#### Option B: Brand Skinning with a Custom Theme Object (`config={...}`)
+```tsx
+import React from 'react';
+import { VideoPlayer, PlayerConfig } from './src';
+
+const netflixTheme: PlayerConfig = {
+  theme: {
+    accentColor: '#E50914', // Red timeline progress track and slider notch
+    trackColor: 'rgba(255, 255, 255, 0.25)',
+    bufferColor: 'rgba(229, 9, 20, 0.35)',
+  },
+  icons: {
+    play: require('./assets/icons/custom_play.png'),
+    pause: require('./assets/icons/custom_pause.png'),
+    sliderThumb: require('./assets/icons/custom_notch.png'), // Replaces default slider thumb
+    rewind: 'gobackward.10', // SF Symbol on iOS, drawable on Android
+    forward: 'goforward.10',
+  },
+  behavior: {
+    skipInterval: 10, // 10s rewind/forward step
+    autoHideTimeout: 3500, // 3.5s auto-hide delay
+    showRewindButton: true,
+    showForwardButton: true,
+    showPlayPauseButton: true,
+    showFullscreenButton: true,
+  },
+};
+
+export function SkinnedPlayer() {
+  return (
+    <VideoPlayer
+      videoUrl="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+      title="Brand Custom Player"
+      config={netflixTheme}
+    />
+  );
+}
 ```
 
 ---

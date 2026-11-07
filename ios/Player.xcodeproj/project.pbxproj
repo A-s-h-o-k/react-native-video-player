@@ -13,15 +13,13 @@
 		25483ECF2EFD43B100104BC5 /* ControlLayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25483ECE2EFD43B100104BC5 /* ControlLayer.mm */; };
 		255776A82F12769600D9DD18 /* CommonButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 255776A72F12769600D9DD18 /* CommonButton.m */; };
 		2557C6F12F343C0800BCF74C /* CenterSection.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2557C6F02F343C0800BCF74C /* CenterSection.mm */; };
-		25688DEE2EFF18ED00E61244 /* EventManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25688DED2EFF18ED00E61244 /* EventManager.cpp */; };
 		25688DF02EFF200000E61244 /* PlayerStateCoordinator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25688DEF2EFF200000E61244 /* PlayerStateCoordinator.cpp */; };
 		25688DF22EFF200000E61244 /* AVPlayerAdapter.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25688DF12EFF200000E61244 /* AVPlayerAdapter.mm */; };
-		25A000012EFF300000A1B2C3 /* NetworkAuthManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */; };
 		25688DF42EFF200000E61244 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25688DF32EFF200000E61244 /* CoreMedia.framework */; };
-
 		257B98F22F32763F00CDD901 /* TopSection.mm in Sources */ = {isa = PBXBuildFile; fileRef = 257B98F12F32763F00CDD901 /* TopSection.mm */; };
 		2584BB2F2EF1D05A00C473C8 /* RCTVideoPlayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */; };
 		2584BB322EF1D2EF00C473C8 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */; };
+		25A000012EFF300000A1B2C3 /* NetworkAuthManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */; };
 		6A4A24E34DE2DB930945705E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -41,21 +39,18 @@
 		255776A72F12769600D9DD18 /* CommonButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CommonButton.m; sourceTree = "<group>"; };
 		2557C6F02F343C0800BCF74C /* CenterSection.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CenterSection.mm; sourceTree = "<group>"; };
 		2557C6F22F343C1F00BCF74C /* CenterSection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CenterSection.h; sourceTree = "<group>"; };
-		25688DED2EFF18ED00E61244 /* EventManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = EventManager.cpp; sourceTree = "<group>"; };
+		25688DEF2EFF200000E61244 /* PlayerStateCoordinator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PlayerStateCoordinator.cpp; path = ../../cpp/PlayerStateCoordinator.cpp; sourceTree = "<group>"; };
+		25688DF12EFF200000E61244 /* AVPlayerAdapter.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = AVPlayerAdapter.mm; path = AVPlayerAdapter.mm; sourceTree = "<group>"; };
+		25688DF32EFF200000E61244 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		25688DF52EFF200000E61244 /* AVPlayerAdapter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AVPlayerAdapter.h; path = AVPlayerAdapter.h; sourceTree = "<group>"; };
 		257B98F12F32763F00CDD901 /* TopSection.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TopSection.mm; sourceTree = "<group>"; };
 		257B98F32F327A6300CDD901 /* TopSection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TopSection.h; sourceTree = "<group>"; };
 		2584BB2D2EF1D05A00C473C8 /* Player-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Player-Bridging-Header.h"; sourceTree = "<group>"; };
 		2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RCTVideoPlayer.mm; sourceTree = "<group>"; };
 		2584BB302EF1D07000C473C8 /* RCTVideoPlayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCTVideoPlayer.h; sourceTree = "<group>"; };
 		2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
-		25688DF32EFF200000E61244 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
-		25688DEF2EFF200000E61244 /* PlayerStateCoordinator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PlayerStateCoordinator.cpp; path = ../../cpp/PlayerStateCoordinator.cpp; sourceTree = "<group>"; };
-		25688DF12EFF200000E61244 /* AVPlayerAdapter.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = AVPlayerAdapter.mm; path = AVPlayerAdapter.mm; sourceTree = "<group>"; };
-		25688DF52EFF200000E61244 /* AVPlayerAdapter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AVPlayerAdapter.h; path = AVPlayerAdapter.h; sourceTree = "<group>"; };
 		25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = NetworkAuthManager.mm; path = NetworkAuthManager.mm; sourceTree = "<group>"; };
 		25A000032EFF300000A1B2C3 /* NetworkAuthManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = NetworkAuthManager.h; path = NetworkAuthManager.h; sourceTree = "<group>"; };
-
-		25DD7D882EF6C370009E0F50 /* EventManager.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = EventManager.hpp; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Player/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Player/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		87D197E4775130520D13CC75 /* libPods-Player.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Player.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -136,15 +131,6 @@
 			path = Common;
 			sourceTree = "<group>";
 		};
-		257B98F02F32756500CDD901 /* TopSection */ = {
-			isa = PBXGroup;
-			children = (
-				257B98F12F32763F00CDD901 /* TopSection.mm */,
-				257B98F32F327A6300CDD901 /* TopSection.h */,
-			);
-			path = TopSection;
-			sourceTree = "<group>";
-		};
 		25688DF62EFF200000E61244 /* Core */ = {
 			isa = PBXGroup;
 			children = (
@@ -154,13 +140,13 @@
 			path = Core;
 			sourceTree = "<group>";
 		};
-		25A000042EFF300000A1B2C3 /* Network */ = {
+		257B98F02F32756500CDD901 /* TopSection */ = {
 			isa = PBXGroup;
 			children = (
-				25A000032EFF300000A1B2C3 /* NetworkAuthManager.h */,
-				25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */,
+				257B98F12F32763F00CDD901 /* TopSection.mm */,
+				257B98F32F327A6300CDD901 /* TopSection.h */,
 			);
-			path = Network;
+			path = TopSection;
 			sourceTree = "<group>";
 		};
 		2584BB2C2EF1D03C00C473C8 /* VideoPlayer */ = {
@@ -178,13 +164,13 @@
 			path = VideoPlayer;
 			sourceTree = "<group>";
 		};
-		25DD7D872EF6C30C009E0F50 /* EventManager */ = {
+		25A000042EFF300000A1B2C3 /* Network */ = {
 			isa = PBXGroup;
 			children = (
-				25DD7D882EF6C370009E0F50 /* EventManager.hpp */,
-				25688DED2EFF18ED00E61244 /* EventManager.cpp */,
+				25A000032EFF300000A1B2C3 /* NetworkAuthManager.h */,
+				25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */,
 			);
-			path = EventManager;
+			path = Network;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
@@ -421,7 +407,7 @@
 					"-ObjC",
 					"-lc++",
 					"-framework",
-					"CoreMedia",
+					CoreMedia,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = Player;
@@ -451,7 +437,7 @@
 					"-ObjC",
 					"-lc++",
 					"-framework",
-					"CoreMedia",
+					CoreMedia,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = Player;

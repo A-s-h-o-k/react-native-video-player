@@ -39,6 +39,12 @@ typedef NS_ENUM(NSInteger, CommonButtonStyle) {
 /** Convenience factory for system SF Symbol icons */
 - (void)setSystemIcon:(NSString *)iconName pointSize:(CGFloat)pointSize weight:(UIImageSymbolWeight)weight;
 
+/** Sets custom icon from asset name, SF Symbol, file URI, or remote URL with system fallback */
+- (void)setIconSource:(nullable NSString *)iconSource
+   fallbackSystemIcon:(NSString *)fallbackSystemIcon
+            pointSize:(CGFloat)pointSize
+               weight:(UIImageSymbolWeight)weight;
+
 /** Accessibility helper */
 - (void)configureAccessibilityWithLabel:(NSString *)label hint:(nullable NSString *)hint;
 

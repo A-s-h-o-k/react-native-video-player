@@ -1,9 +1,19 @@
 package com.player
 
+import android.app.Activity
+import android.app.Dialog
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.pm.ActivityInfo
 import android.util.AttributeSet
+import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.Player
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.player.core.PlaybackState
 import com.player.core.PlayerEngineBridge
 import com.player.core.PlayerStateCoordinator
@@ -19,6 +29,12 @@ class ReactVideoPlayer : FrameLayout {
     private var videoUrl: String = ""
     private var headerMap: Map<String, String>? = null
     private var drmConfig: DrmConfig? = null
+    private var isFullscreen: Boolean = false
+    private var propFullscreen: Boolean? = null
+    private var autoAdjustSafeArea: Boolean = true
+    private var fullscreenDialog: Dialog? = null
+    private var fullscreenContainer: FrameLayout? = null
+    private var originalOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     private lateinit var playerRef: BasePlayer
     private lateinit var controlLayer: ControlLayer
     private lateinit var coordinator: PlayerStateCoordinator
@@ -37,6 +53,10 @@ class ReactVideoPlayer : FrameLayout {
 
     private fun configureComponent() {
         this.setBackgroundColor(android.graphics.Color.BLACK)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(this) { _, windowInsets ->
+            requestLayout()
+            windowInsets
+        }
         this.playerRef = BasePlayer(this.context, false, this.videoUrl)
         // Make the PlayerView fill the entire FrameLayout (ReactVideoPlayer) and center it
         val layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT, android.view.Gravity.CENTER)
@@ -90,7 +110,9 @@ class ReactVideoPlayer : FrameLayout {
             }
 
             override fun onBufferUpdated(bufferedTime: Double, percentage: Double) {
-                // Buffer progress
+                post {
+                    controlLayer.bottomSection.updateBuffer(bufferedTime, percentage)
+                }
             }
 
             override fun onMuteChanged(isMuted: Boolean, volume: Float) {}
@@ -108,6 +130,9 @@ class ReactVideoPlayer : FrameLayout {
 
         // 3. Attach ExoPlayer and Coordinator to ControlLayer
         this.controlLayer.attachPlayer(playerRef.player, this.coordinator)
+        this.controlLayer.onFullscreenToggleRequested = { requestedFs ->
+            setFullscreen(requestedFs, notifyJS = true)
+        }
         this.addView(this.controlLayer, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
 
         // 4. Hook ExoPlayer events to feed inbound notifications into C++ coordinator
@@ -125,6 +150,15 @@ class ReactVideoPlayer : FrameLayout {
             val cur = playerRef.player.currentPosition.coerceAtLeast(0L).toDouble() / 1000.0
             coordinator.notifyEngineDuration(dur)
             coordinator.notifyEngineTime(cur)
+        }
+
+        // 5. Hook video size changes to remeasure playerView as soon as video aspect ratio is resolved
+        playerRef.onVideoSizeChangedListener = { _, _ ->
+            post {
+                if (width > 0 && height > 0) {
+                    applySafeAreaLayout(width, height)
+                }
+            }
         }
     }
 
@@ -219,12 +253,362 @@ class ReactVideoPlayer : FrameLayout {
     }
 
     fun cleanUp() {
+        if (isFullscreen) {
+            setFullscreen(false, notifyJS = false)
+        }
+        try {
+            fullscreenDialog?.dismiss()
+        } catch (_: Exception) {}
+        fullscreenDialog = null
+        fullscreenContainer = null
         coordinator.release()
         playerRef.cleanUp()
     }
 
     fun seekTo(to: Int) {
         coordinator.requestSeek(to.toDouble())
+    }
+
+    private fun findActivity(context: Context): Activity? {
+        if (context is ThemedReactContext) {
+            context.currentActivity?.let { return it }
+        }
+        var ctx = context
+        while (ctx is ContextWrapper) {
+            if (ctx is Activity) return ctx
+            ctx = ctx.baseContext
+        }
+        return null
+    }
+
+    fun setShowFullscreenButton(show: Boolean) {
+        controlLayer.setShowFullscreenButton(show)
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        androidx.core.view.ViewCompat.requestApplyInsets(this)
+        post {
+            requestLayout()
+        }
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        val width = right - left
+        val height = bottom - top
+        applySafeAreaLayout(width, height)
+    }
+
+    private fun applySafeAreaLayout(width: Int, height: Int) {
+        if (isFullscreen) {
+            controlLayer.setSafeAreaInsets(0, 0)
+            return
+        }
+        val location = IntArray(2)
+        getLocationOnScreen(location)
+        val viewScreenY = location[1]
+
+        val statusBarHeight = getStatusBarHeight()
+        val navBarHeight = getNavigationBarHeight()
+
+        // 12dp breathing room buffer so controls never touch status bar icons
+        val buffer = (12 * resources.displayMetrics.density).toInt()
+
+        // Top inset: only if autoAdjustSafeArea is true and player starts within status bar region
+        val topInset = if (autoAdjustSafeArea && viewScreenY < statusBarHeight) {
+            (statusBarHeight - viewScreenY) + buffer
+        } else {
+            0
+        }
+
+        // Bottom inset: only if autoAdjustSafeArea is true and player overlaps bottom navigation bar
+        val screenHeight = resources.displayMetrics.heightPixels
+        val viewBottom = viewScreenY + height
+        val bottomThreshold = screenHeight - navBarHeight
+        val bottomInset = if (autoAdjustSafeArea && height > 0 && viewBottom > bottomThreshold && navBarHeight > 0) {
+            (viewBottom - bottomThreshold).coerceAtLeast(0)
+        } else {
+            0
+        }
+
+        val availHeight = (height - topInset - bottomInset).coerceAtLeast(0)
+
+        // 1. Measure and position video surface inset by safe area
+        if (playerRef.playerView.parent == this) {
+            val widthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY)
+            val heightSpec = MeasureSpec.makeMeasureSpec(availHeight, MeasureSpec.EXACTLY)
+            playerRef.playerView.measure(widthSpec, heightSpec)
+            playerRef.playerView.layout(0, topInset, width, topInset + availHeight)
+        }
+
+        // 2. Position control layer full bleed and pass safe insets to top/bottom sections
+        if (controlLayer.parent == this) {
+            controlLayer.setSafeAreaInsets(topInset, bottomInset)
+            controlLayer.measure(
+                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+            )
+            controlLayer.layout(0, 0, width, height)
+        }
+    }
+
+    fun setAutoAdjustSafeArea(autoAdjust: Boolean) {
+        this.autoAdjustSafeArea = autoAdjust
+        post {
+            if (width > 0 && height > 0) {
+                applySafeAreaLayout(width, height)
+            }
+            requestLayout()
+            invalidate()
+        }
+    }
+
+    private fun getStatusBarHeight(): Int {
+        val activity = findActivity(context)
+
+        // 1. Android 11+ (API 30+): Direct WindowMetrics query (statusBars + displayCutout)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && activity != null) {
+            try {
+                val metrics = activity.windowManager.currentWindowMetrics
+                val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                    android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.displayCutout()
+                )
+                if (insets.top > 0) return insets.top
+            } catch (_: Exception) {}
+        }
+
+        // 2. ViewCompat root insets fallback on decorView
+        val decorView = activity?.window?.decorView
+        val rootInsets = decorView?.let { androidx.core.view.ViewCompat.getRootWindowInsets(it) }
+            ?: androidx.core.view.ViewCompat.getRootWindowInsets(this)
+        val topInset = rootInsets?.getInsets(
+            androidx.core.view.WindowInsetsCompat.Type.statusBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+        )?.top ?: 0
+        if (topInset > 0) return topInset
+
+        // 3. Fallback to resource dimension or modern floor (at least 36dp)
+        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        val resHeight = if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
+        val minModernHeight = (36 * resources.displayMetrics.density).toInt()
+        return maxOf(resHeight, minModernHeight)
+    }
+
+    private fun getNavigationBarHeight(): Int {
+        val activity = findActivity(context)
+
+        // 1. Android 11+ (API 30+): Direct WindowMetrics query for navigationBars
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && activity != null) {
+            try {
+                val metrics = activity.windowManager.currentWindowMetrics
+                val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                    android.view.WindowInsets.Type.navigationBars()
+                )
+                if (insets.bottom > 0) return insets.bottom
+            } catch (_: Exception) {}
+        }
+
+        // 2. ViewCompat root insets fallback on decorView
+        val decorView = activity?.window?.decorView
+        val rootInsets = decorView?.let { androidx.core.view.ViewCompat.getRootWindowInsets(it) }
+            ?: androidx.core.view.ViewCompat.getRootWindowInsets(this)
+        val bottomInset = rootInsets?.getInsets(
+            androidx.core.view.WindowInsetsCompat.Type.navigationBars()
+        )?.bottom ?: 0
+        if (bottomInset > 0) return bottomInset
+
+        val resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        val resHeight = if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
+        val minModernNav = (24 * resources.displayMetrics.density).toInt()
+        return maxOf(resHeight, minModernNav)
+    }
+
+    fun setFullscreenProp(value: Boolean) {
+        if (propFullscreen == value) return
+        propFullscreen = value
+        setFullscreen(value, notifyJS = false)
+    }
+
+    fun setFullscreen(fullscreen: Boolean, notifyJS: Boolean = false) {
+        if (this.isFullscreen == fullscreen) return
+        this.isFullscreen = fullscreen
+
+        post {
+            controlLayer.setFullscreen(fullscreen)
+            val activity = findActivity(context)
+
+            if (fullscreen) {
+                controlLayer.setSafeAreaInsets(0, 0)
+                if (activity != null) {
+                    originalOrientation = activity.requestedOrientation
+
+                    val dialog = object : Dialog(activity, android.R.style.Theme_Black_NoTitleBar_Fullscreen) {
+                        override fun onBackPressed() {
+                            setFullscreen(false, notifyJS = true)
+                        }
+                    }
+
+                    // 1. Detach playerView and controlLayer from this ReactVideoPlayer view
+                    (playerRef.playerView.parent as? ViewGroup)?.removeView(playerRef.playerView)
+                    (controlLayer.parent as? ViewGroup)?.removeView(controlLayer)
+
+                    // 2. Create a clean, black MATCH_PARENT container for the dialog
+                    val container = FrameLayout(activity).apply {
+                        setBackgroundColor(android.graphics.Color.BLACK)
+                    }
+                    if (autoAdjustSafeArea) {
+                        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(container) { _, insets ->
+                            val cutoutInsets = insets.getInsets(
+                                androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+                            )
+                            container.setPadding(cutoutInsets.left, 0, cutoutInsets.right, 0)
+                            insets
+                        }
+                        androidx.core.view.ViewCompat.requestApplyInsets(container)
+                    } else {
+                        container.setPadding(0, 0, 0, 0)
+                    }
+                    val playerParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        android.view.Gravity.CENTER
+                    )
+                    container.addView(playerRef.playerView, playerParams)
+                    container.addView(
+                        controlLayer,
+                        FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT
+                        )
+                    )
+
+                    dialog.setContentView(
+                        container,
+                        ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                    )
+
+                    // 3. Configure window for edge-to-edge immersive sticky fullscreen
+                    dialog.window?.let { win ->
+                        win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                        win.setBackgroundDrawableResource(android.R.color.black)
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                            win.attributes.layoutInDisplayCutoutMode =
+                                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                        }
+                        val controller = WindowInsetsControllerCompat(win, win.decorView)
+                        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        controller.hide(WindowInsetsCompat.Type.systemBars())
+                    }
+
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    dialog.show()
+
+                    fullscreenDialog = dialog
+                    fullscreenContainer = container
+                }
+            } else {
+                if (activity != null) {
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    postDelayed({
+                        if (!isFullscreen && !activity.isFinishing && !activity.isDestroyed) {
+                            activity.requestedOrientation = originalOrientation
+                        }
+                    }, 500)
+                }
+
+                fullscreenContainer?.let { container ->
+                    container.removeView(playerRef.playerView)
+                    container.removeView(controlLayer)
+                }
+
+                try {
+                    fullscreenDialog?.dismiss()
+                } catch (_: Exception) {}
+                fullscreenDialog = null
+                fullscreenContainer = null
+
+                // Re-add playerView and controlLayer back to this ReactVideoPlayer view
+                if (playerRef.playerView.parent == null) {
+                    val layoutParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        android.view.Gravity.CENTER
+                    )
+                    addView(playerRef.playerView, layoutParams)
+                }
+                if (controlLayer.parent == null) {
+                    addView(
+                        controlLayer,
+                        FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT
+                        )
+                    )
+                }
+                post {
+                    applySafeAreaLayout(width, height)
+                }
+            }
+
+            if (notifyJS) {
+                emitFullscreenChange(fullscreen)
+            }
+        }
+    }
+
+    private fun emitFullscreenChange(fullscreen: Boolean) {
+        try {
+            val reactContext = context as? ThemedReactContext ?: return
+            val event = Arguments.createMap().apply {
+                putBoolean("isFullscreen", fullscreen)
+            }
+            reactContext.getJSModule(RCTEventEmitter::class.java)
+                ?.receiveEvent(id, "onFullscreenChange", event)
+        } catch (_: Exception) {}
+    }
+
+    fun setIconsJson(value: String?) {
+        controlLayer.setCustomIconsJson(value)
+    }
+
+    fun setAccentColor(value: String?) {
+        controlLayer.setAccentColor(value)
+    }
+
+    fun setTrackColor(value: String?) {
+        controlLayer.setTrackColor(value)
+    }
+
+    fun setBufferColor(value: String?) {
+        controlLayer.setBufferColor(value)
+    }
+
+    fun setSkipInterval(value: Int) {
+        controlLayer.setSkipInterval(value)
+    }
+
+    fun setShowRewindButton(value: Boolean) {
+        controlLayer.setShowRewindButton(value)
+    }
+
+    fun setShowForwardButton(value: Boolean) {
+        controlLayer.setShowForwardButton(value)
+    }
+
+    fun setShowPlayPauseButton(value: Boolean) {
+        controlLayer.setShowPlayPauseButton(value)
+    }
+
+    fun setAutoHideTimeout(value: Int) {
+        controlLayer.autoHideTimeoutMs = if (value > 0) value.toLong() else 0L
+        controlLayer.resetAutoHideTimer()
+    }
+
+    fun setControlsVisible(value: Boolean) {
+        controlLayer.setControlsVisible(value)
     }
 
     override fun onDetachedFromWindow() {

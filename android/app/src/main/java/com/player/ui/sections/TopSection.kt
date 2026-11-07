@@ -34,7 +34,7 @@ class TopSection @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
+        setPadding(dpToPx(16), dpToPx(12), dpToPx(16), dpToPx(12))
 
         // 1. Navigation Back Button (Small CommonButton)
         backButton = CommonButton(context).apply {

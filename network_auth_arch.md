@@ -218,13 +218,27 @@ Long-form video streams (live broadcasts, sports events, 2+ hour feature films) 
 
 ## 6. End-to-End Buffering & Error Propagation
 
-### 6.1 Buffering Mechanics
-The player implements dynamic buffer thresholds:
-- **Min Buffer (Preroll)**: 2,500 ms (playback starts only after 2.5 seconds of media are buffered).
-- **Max Buffer**: 30,000 ms to 50,000 ms (prevents runaway memory consumption).
-- **Rebuffer Threshold**: 5,000 ms (upon stall, engine accumulates 5 seconds before resuming).
+### 6.1 Buffering Mechanics & Low-Latency Live Tuning
+The player implements optimized buffer thresholds via `DefaultLoadControl` and `AVPlayerItem`:
+- **Preroll to Start / Seek (`bufferForPlaybackMs`)**: 1,000 ms (playback starts after 1.0 second of media are buffered, reducing startup delay by 60%).
+- **Target Buffer Maintained (`minBufferMs`)**: 15,000 ms (minimum baseline buffer maintained during playback).
+- **Max Buffer (`maxBufferMs`)**: 30,000 ms (prevents runaway memory consumption, mirrored on iOS via `preferredForwardBufferDuration = 30.0`).
+- **Rebuffer Threshold (`bufferForPlaybackAfterRebufferMs`)**: 3,000 ms (upon stall, engine accumulates 3 seconds before resuming).
+- **Time-over-Size Prioritization**: Configured with `prioritizeTimeOverSizeThresholds(true)` to protect low-RAM devices (Fire TV / Android TV sticks) from OOM pressure.
+- **Low-Latency Live Edge (LL-HLS / LL-DASH)**: Configured with 2.0s target offset and dynamic catch-up speeds (0.97x–1.05x on Android, `automaticallyPreservesTimeOffsetFromLive = YES` on iOS).
 
-### 6.2 Error Propagation State Machine
+### 6.2 Network Ping (RTT) & Real-Time Bandwidth Telemetry
+Zero third-party SDKs are required to measure network health. Both native engines expose chunk-level network telemetry directly to the shared C++ `PlayerStateCoordinator`:
+- **Android (`AnalyticsListener.onLoadCompleted`)**: Extracts `loadEventInfo.loadDurationMs` as chunk RTT/ping and calculates real-time throughput in bps: `(bytesLoaded * 8000) / maxOf(1, loadDurationMs)`.
+- **iOS (`AVPlayerItemNewAccessLogEntryNotification`)**: Reads `lastEvent.transferDuration` (chunk ping in seconds) and `lastEvent.observedBitrate` (measured bandwidth in bps).
+- **Telemetry Bus**: Metrics dispatch to `PlayerStateCoordinator::notifyEngineNetworkMetrics`, updating `PlayerSnapshot.networkPingMs` and `PlayerSnapshot.bandwidthBitrateBps` with zero UI or JS thread delay.
+
+### 6.3 In-Stream Buffer Metadata Parsers
+Built-in demuxers automatically parse timed metadata without adding external libraries:
+- **Android**: `Player.Listener.onMetadata(metadata)` captures parsed ID3v2 frames, SCTE-35 dynamic ad markers (`SpliceInsertCommand`), and chapter cues.
+- **iOS**: `AVPlayerItemMetadataOutput` attached to `AVPlayerItem` delivers `AVTimedMetadataGroup` items as the playhead advances through the buffer.
+
+### 6.4 Error Propagation State Machine
 All networking and authorization errors are intercepted and translated into standardized C++ coordinator events:
 
 | Failure Type | Native Root Cause | Coordinator State | React Native Event |

@@ -70,6 +70,70 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
         view.setResizeMode(mode)
     }
 
+    @ReactProp(name = "fullscreen")
+    override fun setFullscreen(view: ReactVideoPlayer, value: Boolean) {
+        view.setFullscreenProp(value)
+    }
+
+    @ReactProp(name = "showFullscreenButton")
+    override fun setShowFullscreenButton(view: ReactVideoPlayer, value: Boolean) {
+        view.setShowFullscreenButton(value)
+    }
+
+    @ReactProp(name = "autoAdjustSafeArea", defaultBoolean = true)
+    override fun setAutoAdjustSafeArea(view: ReactVideoPlayer, value: Boolean) {
+        view.setAutoAdjustSafeArea(value)
+    }
+
+    @ReactProp(name = "icons")
+    override fun setIcons(view: ReactVideoPlayer, value: String?) {
+        view.setIconsJson(value)
+    }
+
+    @ReactProp(name = "accentColor")
+    override fun setAccentColor(view: ReactVideoPlayer, value: String?) {
+        view.setAccentColor(value)
+    }
+
+    @ReactProp(name = "trackColor")
+    override fun setTrackColor(view: ReactVideoPlayer, value: String?) {
+        view.setTrackColor(value)
+    }
+
+    @ReactProp(name = "bufferColor")
+    override fun setBufferColor(view: ReactVideoPlayer, value: String?) {
+        view.setBufferColor(value)
+    }
+
+    @ReactProp(name = "skipInterval", defaultInt = 15)
+    override fun setSkipInterval(view: ReactVideoPlayer, value: Int) {
+        view.setSkipInterval(value)
+    }
+
+    @ReactProp(name = "showRewindButton", defaultBoolean = true)
+    override fun setShowRewindButton(view: ReactVideoPlayer, value: Boolean) {
+        view.setShowRewindButton(value)
+    }
+
+    @ReactProp(name = "showForwardButton", defaultBoolean = true)
+    override fun setShowForwardButton(view: ReactVideoPlayer, value: Boolean) {
+        view.setShowForwardButton(value)
+    }
+
+    @ReactProp(name = "showPlayPauseButton", defaultBoolean = true)
+    override fun setShowPlayPauseButton(view: ReactVideoPlayer, value: Boolean) {
+        view.setShowPlayPauseButton(value)
+    }
+
+    @ReactProp(name = "autoHideTimeout", defaultInt = 5000)
+    override fun setAutoHideTimeout(view: ReactVideoPlayer, value: Int) {
+        view.setAutoHideTimeout(value)
+    }
+
+    @ReactProp(name = "controls", defaultBoolean = true)
+    override fun setControls(view: ReactVideoPlayer, value: Boolean) {
+        view.setControlsVisible(value)
+    }
 
     override fun getExportedCustomBubblingEventTypeConstants(): Map<String, Any> =
         mapOf(
@@ -79,5 +143,12 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
                                 mapOf(
                                     "bubbled" to "onScriptLoaded",
                                     "captured" to "onScriptLoadedCapture"
+                                )),
+            "onFullscreenChange" to
+                    mapOf(
+                        "phasedRegistrationNames" to
+                                mapOf(
+                                    "bubbled" to "onFullscreenChange",
+                                    "captured" to "onFullscreenChangeCapture"
                                 )))
 }

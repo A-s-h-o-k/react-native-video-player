@@ -6,6 +6,7 @@ An enterprise-grade, high-performance, cross-platform video player for React Nat
 
 | Document | Description |
 | :--- | :--- |
+| **[VERSION_1.0_RELEASE.md](file:///Users/ashokammineni/video-player/new_2/Player/VERSION_1.0_RELEASE.md)** | **Version 1.0 Release Audit** (Completed v1.0.0 scope, acceptance criteria, verified components) |
 | **[TASK_STATUS.md](file:///Users/ashokammineni/video-player/new_2/Player/TASK_STATUS.md)** | **Live Implementation Tracker** (Active task spotlight, component status matrix, agent workflow) |
 | **[quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md)** | **Documentation Sitemap & Update Guide** (Index of all active code and specs) |
 | **[ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)** | **Master System Architecture** (Dual-lane data flow, C++ core, Fabric bridge, native templates) |
@@ -14,6 +15,8 @@ An enterprise-grade, high-performance, cross-platform video player for React Nat
 | **[core_player_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/core_player_arch.md)** | **Headless Core Player** (AVPlayer & ExoPlayer native engine adapters) |
 | **[base_layout_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/base_layout_arch.md)** | **Master Overlay Container** (Full-bleed layout, smart 5s auto-hide with pause immunity) |
 | **[sections_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/sections_arch.md)** | **Section Layouts & Delegates** (Top, Center, Bottom sections, 2D TV focus grid) |
+| **[network_auth_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/network_auth_arch.md)** | **Networking, Auth & DRM** (FairPlay, Widevine, custom headers, token refresh) |
+| **[analytics_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/analytics_arch.md)** | **Analytics & Plugin Architecture** (Vendor-agnostic plugins, QoE/QoS schemas, heartbeat) |
 | **[button_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/button_arch.md)** | **Base Button Primitive** (`CommonButton` touch targets, TV focus, A11y) |
 | **[AGENTS.md](file:///Users/ashokammineni/video-player/new_2/Player/AGENTS.md)** | **Governance & Engineering Rules** (Strict user approval, 11 core principles) |
 

@@ -210,6 +210,7 @@ The native control overlay is composed of modular native sections hosted inside 
 
 ## 6. Implementation Status & Roadmap
 
+> **Version 1.0 Release Specification**: See [VERSION_1.0_RELEASE.md](file:///Users/ashokammineni/video-player/new_2/Player/VERSION_1.0_RELEASE.md) for the formal v1.0.0 completion audit, acceptance criteria, and subsystem test results.
 > **Live Implementation Tracking**: See [TASK_STATUS.md](file:///Users/ashokammineni/video-player/new_2/Player/TASK_STATUS.md) for the active task spotlight, granular component matrix, and agent update protocol.
 
 ### Currently Implemented (Active in Codebase):
@@ -220,7 +221,7 @@ The native control overlay is composed of modular native sections hosted inside 
   - [PlayerStateCoordinator.hpp](file:///Users/ashokammineni/video-player/new_2/Player/cpp/PlayerStateCoordinator.hpp) & [PlayerStateCoordinator.cpp](file:///Users/ashokammineni/video-player/new_2/Player/cpp/PlayerStateCoordinator.cpp): Thread-safe state machine, mutex-guarded 3-phase scrub engine, auto-pruning `std::weak_ptr` observer bus.
   - Architecture Spec: [state_manager_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/state_manager_arch.md).
 - **iOS Native Engine Adapter & Root Wiring**:
-  - [AVPlayerAdapter.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Core/AVPlayerAdapter.h) & [AVPlayerAdapter.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Core/AVPlayerAdapter.mm): Implements `IPlaybackEngineBridge` via in-place `AVPlayerAdapterBridge`, binds `AVPlayer` KVO (`timeControlStatus`, `duration`) and periodic time observer (`addPeriodicTimeObserverForInterval`) to notify `PlayerStateCoordinator`. Enforces strict observer attachment sequence after player creation.
+  - [AVPlayerAdapter.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Core/AVPlayerAdapter.h) & [AVPlayerAdapter.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Core/AVPlayerAdapter.mm): Implements `IPlaybackEngineBridge` via in-place `AVPlayerAdapterBridge`, binds `AVPlayer` KVO (`timeControlStatus`, `duration`) and periodic time observer to notify `PlayerStateCoordinator`. Includes playhead-aware buffer range lookup, 0.5s throttling, 30s forward buffer limit, low-latency live edge (`configuredTimeOffsetFromLive = 2.0`), network RTT/ping telemetry via `AVPlayerItemAccessLog`, and in-stream timed metadata parsing via `AVPlayerItemMetadataOutput`.
   - [RCTVideoPlayer.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/RCTVideoPlayer.mm): Instantiates `PlayerStateCoordinator` and `AVPlayerAdapter`, registers observers, wires `ControlLayer`, and handles Fabric view recycling (`prepareForRecycle`) with defensive reload checks on remount.
   - Architecture Spec: [core_player_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/core_player_arch.md).
 - **Base Button Primitives (`CommonButton`)**:
@@ -245,7 +246,7 @@ The native control overlay is composed of modular native sections hosted inside 
   - [ReactVideoPlayer.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ReactVideoPlayer.kt): Instantiates coordinator, connects ExoPlayer engine bridge, and pipes state and scrub events directly to `ControlLayer.kt`.
 - **Dedicated Networking, Authorization & Hardware DRM Subsystem**:
   - iOS / tvOS: [NetworkAuthManager.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Network/NetworkAuthManager.h) & [NetworkAuthManager.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/Network/NetworkAuthManager.mm) (`AVContentKeySessionDelegate`, Apple FairPlay Streaming SPC <-> CKC exchange, `AVURLAssetHTTPHeaderFieldsKey` injection).
-  - Android / Android TV: [NetworkAuthManager.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/network/NetworkAuthManager.kt), [DrmConfig.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/network/DrmConfig.kt), and [TokenRefreshAuthenticator.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/network/TokenRefreshAuthenticator.kt) (`DefaultHttpDataSource.Factory`, Google Widevine Modular L1/L3 via `DefaultDrmSessionManager`, thread-safe token refresh and replay).
+  - Android / Android TV: [NetworkAuthManager.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/network/NetworkAuthManager.kt), [DrmConfig.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/network/DrmConfig.kt), and [TokenRefreshAuthenticator.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/network/TokenRefreshAuthenticator.kt) (`DefaultHttpDataSource.Factory`, Google Widevine Modular L1/L3 via `DefaultDrmSessionManager`, low-latency live streaming via `MediaItem.LiveConfiguration`, `DefaultLoadControl` 1s preroll / 3s rebuffer with time-over-size RAM prioritization, thread-safe token refresh and replay).
   - Architecture Spec: [network_auth_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/network_auth_arch.md).
 - **Pure Fabric Native Component & Demo App**:
   - [specs/VideoPlayerNativeComponent.ts](file:///Users/ashokammineni/video-player/new_2/Player/specs/VideoPlayerNativeComponent.ts): Codegen native component specification with `headers?: string` and `drm?: string`.
@@ -257,15 +258,19 @@ The native control overlay is composed of modular native sections hosted inside 
 ---
 
 ### Next Roadmap Milestones:
-1. **Native Top Section (`TopSection`)**:
-   - Title header, back navigation button, and overflow/settings menu.
-2. **Template Customization Engine**:
-   - Native template switcher supporting `"cinema"`, `"minimal"`, `"live"`, and `"leanback"`.
+1. **Analytics & Pluggable Telemetry Subsystem**:
+   - Vendor-agnostic plugin architecture (`VideoPlayerAnalyticsPlugin`, `BaseAnalyticsPlugin`).
+   - `AnalyticsCoordinator` tracking TTFF, rebuffer ratio, seek latency, and quartile milestones.
+   - Built-in `ConsoleAnalyticsPlugin` & `HttpBeaconPlugin`.
+   - Architecture Spec: [analytics_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/analytics_arch.md).
+2. **Declarative Custom Layout Builder (Schema / Mini-Markup)**:
+   - 2-Pillar system: Turnkey Native (fast-path zero overhead) vs. Declarative Custom Layout Builder.
+   - Universal schema specification (`LayoutNode`) supporting both JSON and XML layouts.
+   - Dual execution modes: **Runtime Inflater (SDUI)** for remote OTA layout updates and **Build-Time AOT Compiler (CLI)** for 0ms parse time and compile-time type safety.
+   - Architecture Spec: [layout_builder_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/layout_builder_arch.md).
 3. **OS Media Session & TV Remote Focus**:
    - `MPRemoteCommandCenter` & `MPNowPlayingInfoCenter` (iOS/tvOS).
    - `MediaSessionCompat` (Android).
    - D-pad 2D navigation grid focus engine scaling.
-4. **OS Media Session & TV Remote Focus**:
-   - `MPRemoteCommandCenter` & `MPNowPlayingInfoCenter` (iOS/tvOS).
-   - `MediaSessionCompat` (Android).
-   - D-pad 2D navigation grid focus engine scaling.
+4. **Picture-in-Picture (PiP) & Background Playback**:
+   - `AVPictureInPictureController` (iOS) & `enterPictureInPictureMode()` (Android).

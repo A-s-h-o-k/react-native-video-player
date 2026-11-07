@@ -94,6 +94,15 @@ class NetworkAuthManager {
             builder.setDrmConfiguration(drmBuilder.build())
         }
 
+        val liveConfig = MediaItem.LiveConfiguration.Builder()
+            .setTargetOffsetMs(2000)
+            .setMinOffsetMs(1000)
+            .setMaxOffsetMs(4000)
+            .setMinPlaybackSpeed(0.97f)
+            .setMaxPlaybackSpeed(1.05f)
+            .build()
+        builder.setLiveConfiguration(liveConfig)
+
         return builder.build()
     }
 

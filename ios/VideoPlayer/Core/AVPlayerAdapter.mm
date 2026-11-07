@@ -58,17 +58,19 @@ struct AVPlayerAdapterBridge : public PlayerCore::IPlaybackEngineBridge {
 
 #pragma mark - Objective-C++ Adapter Implementation
 
-@interface AVPlayerAdapter () {
+@interface AVPlayerAdapter () <AVPlayerItemMetadataOutputPushDelegate> {
     PlayerCore::PlayerStateCoordinator *_coordinator;
     AVPlayerAdapterBridge _bridge;
 }
 @property (nonatomic, strong, readwrite, nullable) AVPlayer *player;
 @property (nonatomic, strong, readwrite) NetworkAuthManager *networkAuthManager;
 @property (nonatomic, strong, nullable) AVPlayerItem *observedItem;
+@property (nonatomic, strong, nullable) AVPlayerItemMetadataOutput *metadataOutput;
 @property (nonatomic, strong, nullable) id timeObserverToken;
 @property (nonatomic, assign) BOOL isObservingItem;
 @property (nonatomic, assign) BOOL isObservingPlayer;
 @property (nonatomic, assign) BOOL isCleanedUp;
+@property (nonatomic, assign) NSTimeInterval lastReportedBufferTime;
 @end
 
 @implementation AVPlayerAdapter
@@ -139,6 +141,16 @@ struct AVPlayerAdapterBridge : public PlayerCore::IPlaybackEngineBridge {
     if (!item) { return; }
     [self cleanupCurrentItemObservers];
     self.observedItem = item;
+    _lastReportedBufferTime = -1.0;
+
+    // Cap forward buffer to 30.0s to prevent runaway memory and cellular data usage
+    item.preferredForwardBufferDuration = 30.0;
+
+    // Configure low-latency live streaming offset
+    if (@available(iOS 13.0, tvOS 13.0, *)) {
+        item.automaticallyPreservesTimeOffsetFromLive = YES;
+        item.configuredTimeOffsetFromLive = CMTimeMakeWithSeconds(2.0, NSEC_PER_SEC);
+    }
 
     [item addObserver:self
            forKeyPath:@"status"
@@ -154,6 +166,18 @@ struct AVPlayerAdapterBridge : public PlayerCore::IPlaybackEngineBridge {
                                              selector:@selector(playerItemDidReachEnd:)
                                                  name:AVPlayerItemDidPlayToEndTimeNotification
                                                object:item];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(playerItemNewAccessLogEntry:)
+                                                 name:AVPlayerItemNewAccessLogEntryNotification
+                                               object:item];
+
+    // Configure in-stream timed metadata output (ID3, SCTE-35, chapters)
+    AVPlayerItemMetadataOutput *metadataOutput = [[AVPlayerItemMetadataOutput alloc] init];
+    [metadataOutput setDelegate:self queue:dispatch_get_main_queue()];
+    [item addOutput:metadataOutput];
+    self.metadataOutput = metadataOutput;
+
     _isObservingItem = YES;
 }
 
@@ -168,6 +192,16 @@ struct AVPlayerAdapterBridge : public PlayerCore::IPlaybackEngineBridge {
         [[NSNotificationCenter defaultCenter] removeObserver:self
                                                         name:AVPlayerItemDidPlayToEndTimeNotification
                                                       object:self.observedItem];
+        [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                        name:AVPlayerItemNewAccessLogEntryNotification
+                                                      object:self.observedItem];
+
+        if (self.metadataOutput) {
+            [self.metadataOutput setDelegate:nil queue:nil];
+            [self.observedItem removeOutput:self.metadataOutput];
+            self.metadataOutput = nil;
+        }
+
         self.observedItem = nil;
         _isObservingItem = NO;
     }
@@ -257,12 +291,29 @@ struct AVPlayerAdapterBridge : public PlayerCore::IPlaybackEngineBridge {
     else if ([keyPath isEqualToString:@"loadedTimeRanges"]) {
         NSArray *timeRanges = self.player.currentItem.loadedTimeRanges;
         if (timeRanges.count > 0) {
-            CMTimeRange timeRange = [timeRanges.firstObject CMTimeRangeValue];
-            double startSeconds = CMTimeGetSeconds(timeRange.start);
-            double durationSeconds = CMTimeGetSeconds(timeRange.duration);
-            double bufferedTime = startSeconds + durationSeconds;
+            double currentTime = CMTimeGetSeconds(self.player.currentTime);
+            double bufferedTime = 0.0;
+            for (NSValue *rangeValue in timeRanges) {
+                CMTimeRange timeRange = [rangeValue CMTimeRangeValue];
+                double startSeconds = CMTimeGetSeconds(timeRange.start);
+                double durationSeconds = CMTimeGetSeconds(timeRange.duration);
+                double endSeconds = startSeconds + durationSeconds;
+                if (!isnan(startSeconds) && !isnan(durationSeconds)) {
+                    if (currentTime >= startSeconds && currentTime <= endSeconds) {
+                        bufferedTime = endSeconds;
+                        break;
+                    } else if (endSeconds > bufferedTime) {
+                        bufferedTime = endSeconds;
+                    }
+                }
+            }
             if (!isnan(bufferedTime)) {
-                _coordinator->notifyEngineBuffer(bufferedTime);
+                double duration = CMTimeGetSeconds(self.player.currentItem.duration);
+                BOOL isCompleted = (!isnan(duration) && duration > 0.0 && bufferedTime >= (duration - 0.25));
+                if (fabs(bufferedTime - _lastReportedBufferTime) >= 0.5 || isCompleted) {
+                    _lastReportedBufferTime = bufferedTime;
+                    _coordinator->notifyEngineBuffer(bufferedTime);
+                }
             }
         }
     }
@@ -275,6 +326,27 @@ struct AVPlayerAdapterBridge : public PlayerCore::IPlaybackEngineBridge {
     if (_coordinator) {
         _coordinator->notifyEngineState(PlayerCore::PlaybackState::Ended);
     }
+}
+
+- (void)playerItemNewAccessLogEntry:(NSNotification *)notification {
+    AVPlayerItem *item = (AVPlayerItem *)notification.object;
+    if (!item || item != self.observedItem || !_coordinator) { return; }
+    AVPlayerItemAccessLogEvent *lastEvent = item.accessLog.events.lastObject;
+    if (lastEvent) {
+        double rttMs = lastEvent.transferDuration * 1000.0; // transfer duration in milliseconds
+        double bitrateBps = lastEvent.observedBitrate;       // measured bandwidth in bits per second
+        if (!isnan(rttMs) && rttMs >= 0.0 && !isnan(bitrateBps) && bitrateBps >= 0.0) {
+            _coordinator->notifyEngineNetworkMetrics(rttMs, bitrateBps);
+        }
+    }
+}
+
+#pragma mark - AVPlayerItemMetadataOutputPushDelegate
+
+- (void)metadataOutput:(AVPlayerItemMetadataOutput *)output
+didOutputTimedMetadataGroups:(NSArray<AVTimedMetadataGroup *> *)groups
+  fromPlayerItemTrack:(AVPlayerItemTrack *)track {
+    // In-stream parsed timed metadata available as playhead advances
 }
 
 - (void)cleanup {

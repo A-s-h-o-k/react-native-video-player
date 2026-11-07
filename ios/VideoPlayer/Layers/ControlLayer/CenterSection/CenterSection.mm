@@ -17,6 +17,9 @@
 - (instancetype)initWithFrame:(CGRect)frame {
   self = [super initWithFrame:frame];
   if (self) {
+    _skipInterval = 15.0;
+    _isPlayingState = NO;
+    _isEndedState = NO;
     [self setupUI];
   }
   return self;
@@ -29,21 +32,20 @@
   self.spacing = 24.0;
   self.translatesAutoresizingMaskIntoConstraints = NO;
 
-  // 1. Rewind Button (15s)
+  // 1. Rewind Button
   self.backwardButton = [[CommonButton alloc] initWithSize:CommonButtonSizeMedium style:CommonButtonStyleTranslucentCircle];
-  [self.backwardButton setSystemIcon:@"gobackward.15" pointSize:22 weight:UIImageSymbolWeightSemibold];
-  [self.backwardButton configureAccessibilityWithLabel:@"Rewind 15 seconds" hint:@"Seeks backward by 15 seconds"];
+  [self updateRewindButtonIcon];
   __weak CenterSection *weakSelf = self;
   self.backwardButton.onTap = ^(CommonButton * _Nonnull button) {
     CenterSection *strongSelf = weakSelf;
     if (strongSelf && [strongSelf.delegate respondsToSelector:@selector(centerSection:didTapRewind:)]) {
-      [strongSelf.delegate centerSection:strongSelf didTapRewind:15.0];
+      [strongSelf.delegate centerSection:strongSelf didTapRewind:strongSelf.skipInterval];
     }
   };
 
   // 2. Play / Pause Button (Large)
   self.playButton = [[CommonButton alloc] initWithSize:CommonButtonSizeLarge style:CommonButtonStyleTranslucentCircle];
-  [self.playButton setSystemIcon:@"play.fill" pointSize:32 weight:UIImageSymbolWeightBold];
+  [self.playButton setIconSource:self.customIcons[@"play"] fallbackSystemIcon:@"play.fill" pointSize:32 weight:UIImageSymbolWeightBold];
   [self.playButton configureAccessibilityWithLabel:@"Play" hint:@"Starts video playback"];
   self.playButton.onTap = ^(CommonButton * _Nonnull button) {
     CenterSection *strongSelf = weakSelf;
@@ -52,14 +54,13 @@
     }
   };
 
-  // 3. Fast Forward Button (15s)
+  // 3. Fast Forward Button
   self.forwardButton = [[CommonButton alloc] initWithSize:CommonButtonSizeMedium style:CommonButtonStyleTranslucentCircle];
-  [self.forwardButton setSystemIcon:@"goforward.15" pointSize:22 weight:UIImageSymbolWeightSemibold];
-  [self.forwardButton configureAccessibilityWithLabel:@"Fast forward 15 seconds" hint:@"Seeks forward by 15 seconds"];
+  [self updateForwardButtonIcon];
   self.forwardButton.onTap = ^(CommonButton * _Nonnull button) {
     CenterSection *strongSelf = weakSelf;
     if (strongSelf && [strongSelf.delegate respondsToSelector:@selector(centerSection:didTapForward:)]) {
-      [strongSelf.delegate centerSection:strongSelf didTapForward:15.0];
+      [strongSelf.delegate centerSection:strongSelf didTapForward:strongSelf.skipInterval];
     }
   };
 
@@ -68,17 +69,64 @@
   [self addArrangedSubview:self.forwardButton];
 }
 
+- (void)setSkipInterval:(NSTimeInterval)skipInterval {
+  _skipInterval = (skipInterval > 0) ? skipInterval : 15.0;
+  [self updateRewindButtonIcon];
+  [self updateForwardButtonIcon];
+}
+
+- (void)updateRewindButtonIcon {
+  NSString *fallback = @"gobackward.15";
+  if ((NSInteger)self.skipInterval == 10) fallback = @"gobackward.10";
+  else if ((NSInteger)self.skipInterval == 30) fallback = @"gobackward.30";
+  else if ((NSInteger)self.skipInterval == 5) fallback = @"gobackward.5";
+  else if ((NSInteger)self.skipInterval != 15) fallback = @"gobackward";
+
+  [self.backwardButton setIconSource:self.customIcons[@"rewind"] fallbackSystemIcon:fallback pointSize:22 weight:UIImageSymbolWeightSemibold];
+  [self.backwardButton configureAccessibilityWithLabel:[NSString stringWithFormat:@"Rewind %d seconds", (int)self.skipInterval] hint:@"Seeks backward"];
+}
+
+- (void)updateForwardButtonIcon {
+  NSString *fallback = @"goforward.15";
+  if ((NSInteger)self.skipInterval == 10) fallback = @"goforward.10";
+  else if ((NSInteger)self.skipInterval == 30) fallback = @"goforward.30";
+  else if ((NSInteger)self.skipInterval == 5) fallback = @"goforward.5";
+  else if ((NSInteger)self.skipInterval != 15) fallback = @"goforward";
+
+  [self.forwardButton setIconSource:self.customIcons[@"forward"] fallbackSystemIcon:fallback pointSize:22 weight:UIImageSymbolWeightSemibold];
+  [self.forwardButton configureAccessibilityWithLabel:[NSString stringWithFormat:@"Fast forward %d seconds", (int)self.skipInterval] hint:@"Seeks forward"];
+}
+
+- (void)setCustomIcons:(NSDictionary<NSString *,NSString *> *)customIcons {
+  _customIcons = [customIcons copy];
+  [self updateRewindButtonIcon];
+  [self updateForwardButtonIcon];
+  [self setPlaying:_isPlayingState isEnded:_isEndedState];
+}
+
+- (void)setShowRewindButton:(BOOL)show {
+  self.backwardButton.hidden = !show;
+}
+
+- (void)setShowForwardButton:(BOOL)show {
+  self.forwardButton.hidden = !show;
+}
+
+- (void)setShowPlayPauseButton:(BOOL)show {
+  self.playButton.hidden = !show;
+}
+
 - (void)setPlaying:(BOOL)playing isEnded:(BOOL)ended {
   _isPlayingState = playing;
   _isEndedState = ended;
   if (ended) {
-    [self.playButton setSystemIcon:@"arrow.counterclockwise" pointSize:30 weight:UIImageSymbolWeightBold];
+    [self.playButton setIconSource:self.customIcons[@"replay"] fallbackSystemIcon:@"arrow.counterclockwise" pointSize:30 weight:UIImageSymbolWeightBold];
     [self.playButton configureAccessibilityWithLabel:@"Replay" hint:@"Replays video from the beginning"];
   } else if (playing) {
-    [self.playButton setSystemIcon:@"pause.fill" pointSize:32 weight:UIImageSymbolWeightBold];
+    [self.playButton setIconSource:self.customIcons[@"pause"] fallbackSystemIcon:@"pause.fill" pointSize:32 weight:UIImageSymbolWeightBold];
     [self.playButton configureAccessibilityWithLabel:@"Pause" hint:@"Pauses video playback"];
   } else {
-    [self.playButton setSystemIcon:@"play.fill" pointSize:32 weight:UIImageSymbolWeightBold];
+    [self.playButton setIconSource:self.customIcons[@"play"] fallbackSystemIcon:@"play.fill" pointSize:32 weight:UIImageSymbolWeightBold];
     [self.playButton configureAccessibilityWithLabel:@"Play" hint:@"Resumes video playback"];
   }
 }

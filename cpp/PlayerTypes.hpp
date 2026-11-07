@@ -32,6 +32,8 @@ struct PlayerSnapshot {
     float volume = 1.0f;
     bool isMuted = false;
     bool isScrubbing = false;
+    double networkPingMs = 0.0;
+    double bandwidthBitrateBps = 0.0;
     int errorCode = 0;
     std::string errorMessage = "";
 };
