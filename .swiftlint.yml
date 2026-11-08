@@ -1,0 +1,27 @@
+disabled_rules:
+  - line_length
+  - function_body_length
+  - type_body_length
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - fatal_error_message
+  - first_where
+  - overridden_super_call
+  - redundant_nil_coalescing
+  - unneeded_break_in_switch
+  - unused_declaration
+  - unused_import
+
+included:
+  - ios/Player
+  - ios/VideoPlayer
+
+excluded:
+  - ios/Pods
+  - ios/build
+  - ios/VideoPlayer/Generated
+
+reporter: "xcode"
+

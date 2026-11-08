@@ -30,6 +30,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)initWithFrame:(CGRect)frame;
 - (void)setTitle:(nullable NSString *)title;
+- (void)setCaptionsVisible:(BOOL)visible;
+- (void)setCaptionsActive:(BOOL)active;
 
 @end
 

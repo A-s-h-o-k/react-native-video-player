@@ -1,0 +1,10 @@
+node_modules/
+Pods/
+vendor/
+build/
+android/
+ios/build/
+.derivedData/
+coverage/
+scripts/
+

@@ -20,6 +20,11 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
 
     override fun createViewInstance(context: ThemedReactContext): ReactVideoPlayer = ReactVideoPlayer(context)
 
+    override fun onDropViewInstance(view: ReactVideoPlayer) {
+        super.onDropViewInstance(view)
+        view.cleanUp()
+    }
+
     @ReactProp(name = "videoUrl")
     override fun setVideoUrl(view: ReactVideoPlayer, videoUrl: String?) {
         if(videoUrl == null) {

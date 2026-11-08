@@ -106,7 +106,7 @@
     [self.fullscreenButton setSystemIcon:@"arrow.up.left.and.arrow.down.right" pointSize:16 weight:UIImageSymbolWeightSemibold];
     [self.fullscreenButton configureAccessibilityWithLabel:@"Fullscreen" hint:@"Toggles fullscreen display"];
     __weak BottomSection *weakSelf = self;
-    self.fullscreenButton.onTap = ^(CommonButton * _Nonnull button) {
+    self.fullscreenButton.onTap = ^(__unused CommonButton * _Nonnull button) {
         BottomSection *strongSelf = weakSelf;
         if (strongSelf && [strongSelf.delegate respondsToSelector:@selector(bottomSectionDidTapFullscreen:)]) {
             [strongSelf.delegate bottomSectionDidTapFullscreen:strongSelf];
@@ -223,7 +223,7 @@
         NSURL *url = [NSURL URLWithString:thumbSource];
         if (url) {
             __weak typeof(self) weakSelf = self;
-            [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, __unused NSURLResponse * _Nullable response, NSError * _Nullable error) {
                 if (data && !error) {
                     UIImage *img = [UIImage imageWithData:data];
                     if (img) {

@@ -280,6 +280,9 @@ struct AVPlayerAdapterBridge : public PlayerCore::IPlaybackEngineBridge {
             if (!isnan(duration) && duration > 0.0) {
                 _coordinator->notifyEngineDuration(duration);
             }
+            if (self.onItemReadyToPlay && self.player.currentItem) {
+                self.onItemReadyToPlay(self.player.currentItem);
+            }
         } else if (status == AVPlayerItemStatusFailed) {
             NSError *error = self.player.currentItem.error;
             std::string msg = error ? error.localizedDescription.UTF8String : "Media item failed to load";

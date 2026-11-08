@@ -1,0 +1,62 @@
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+style:
+  UnusedPrivateMember:
+    active: true
+    allowedNames: '(_|ignored|expected)'
+  UnusedPrivateProperty:
+    active: true
+    allowedNames: '(_|ignored|expected)'
+  UnusedParameter:
+    active: true
+    allowedNames: '(_|ignored|expected)'
+  ForbiddenComment:
+    active: false
+  MagicNumber:
+    active: false
+  MaxLineLength:
+    active: false
+  ReturnCount:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+
+complexity:
+  TooManyFunctions:
+    active: false
+  LongMethod:
+    active: false
+  ComplexCondition:
+    active: false
+  CyclomaticComplexMethod:
+    active: false
+  NestedBlockDepth:
+    active: false
+  LargeClass:
+    active: false
+
+potential-bugs:
+  UnreachableCode:
+    active: true
+  UnconditionalJumpStatementInLoop:
+    active: true
+  ImplicitDefaultLocale:
+    active: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+  SwallowedException:
+    active: false
+
+empty-blocks:
+  EmptyFunctionBlock:
+    active: false
+  EmptyCatchBlock:
+    active: false
+
+naming:
+  FunctionNaming:
+    active: false

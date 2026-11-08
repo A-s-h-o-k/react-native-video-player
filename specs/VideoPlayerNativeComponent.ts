@@ -4,7 +4,7 @@ import type {
   ViewProps,
 } from 'react-native';
 import {codegenNativeComponent} from 'react-native';
-import { Int32,  } from 'react-native/Libraries/Types/CodegenTypes';
+import { Int32, WithDefault } from 'react-native/Libraries/Types/CodegenTypes';
 
 type VideoPlayer = {
   result: 'success' | 'error';
@@ -30,18 +30,18 @@ export interface NativeProps extends ViewProps {
   drm?: string;
   resizeMode?: string;
   fullscreen?: boolean;
-  showFullscreenButton?: boolean;
+  showFullscreenButton?: WithDefault<boolean, false>;
   autoAdjustSafeArea?: boolean;
   icons?: string;
   accentColor?: string;
   trackColor?: string;
   bufferColor?: string;
-  skipInterval?: Int32;
-  showRewindButton?: boolean;
-  showForwardButton?: boolean;
-  showPlayPauseButton?: boolean;
-  autoHideTimeout?: Int32;
-  controls?: boolean;
+  skipInterval?: WithDefault<Int32, 10>;
+  showRewindButton?: WithDefault<boolean, true>;
+  showForwardButton?: WithDefault<boolean, true>;
+  showPlayPauseButton?: WithDefault<boolean, true>;
+  autoHideTimeout?: WithDefault<Int32, 5000>;
+  controls?: WithDefault<boolean, true>;
   onFullscreenChange?: CodegenTypes.BubblingEventHandler<FullscreenChangeEvent> | null;
 }
 

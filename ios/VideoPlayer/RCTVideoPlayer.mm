@@ -21,6 +21,9 @@
 #import "Core/AVPlayerAdapter.h"
 #import "../../cpp/PlayerStateCoordinator.hpp"
 #import "OrientationManager.h"
+#import "Metadata/MediaMetadataResolver.h"
+#import "Subtitles/SubtitleManager.h"
+#import "Thumbnail/ThumbnailProvider.h"
 
 using namespace facebook::react;
 
@@ -64,7 +67,7 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
 
 #pragma mark - RCTVideoPlayer
 
-@interface RCTVideoPlayer () <RCTVideoPlayerViewProtocol> {
+@interface RCTVideoPlayer () <RCTVideoPlayerViewProtocol, SubtitleManagerDelegate> {
     std::unique_ptr<PlayerCore::PlayerStateCoordinator> _coordinator;
 }
 
@@ -80,6 +83,9 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
 @property (nonatomic, assign) BOOL isFullscreenTransitioning;
 @property (nonatomic, assign) BOOL autoAdjustSafeArea;
 @property (nonatomic, strong, nullable) NSArray<NSLayoutConstraint *> *controlsConstraints;
+@property (nonatomic, strong) MediaMetadataResolver *metadataResolver;
+@property (nonatomic, strong) SubtitleManager *subtitleManager;
+@property (nonatomic, strong) ThumbnailProvider *thumbnailProvider;
 
 @end
 
@@ -101,6 +107,10 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
     self.backgroundColor = UIColor.blackColor;
     _autoAdjustSafeArea = YES;
     _coordinator = std::make_unique<PlayerCore::PlayerStateCoordinator>();
+    _metadataResolver = [[MediaMetadataResolver alloc] init];
+    _subtitleManager = [[SubtitleManager alloc] init];
+    _subtitleManager.delegate = self;
+    _thumbnailProvider = [[ThumbnailProvider alloc] init];
   }
   return self;
 }
@@ -240,7 +250,7 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
     [self.controlsLayer setAutoHideTimeoutMs:newViewProps.autoHideTimeout];
   }
   if (self.controlsLayer && (!oldViewPropsPtr || oldViewPropsPtr->controls != newViewProps.controls || needsLoadVideo)) {
-    [self.controlsLayer setControlsVisible:newViewProps.controls];
+    [self.controlsLayer setControlsAllowed:newViewProps.controls];
   }
 
   [super updateProps:props oldProps:oldProps];
@@ -333,6 +343,24 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
   self.controlsLayer.onFullscreenToggleRequested = ^(BOOL isFullscreen) {
     [weakSelf setFullscreenMode:isFullscreen notifyJS:YES];
   };
+  self.controlsLayer.onCaptionsToggleRequested = ^{
+    [weakSelf.subtitleManager toggleSubtitles];
+  };
+  [self.subtitleManager attachPlayerItem:self.player.currentItem];
+
+  self.adapter.onItemReadyToPlay = ^(AVPlayerItem *item) {
+    RCTVideoPlayer *strongSelf = weakSelf;
+    if (!strongSelf) return;
+    [strongSelf.subtitleManager attachPlayerItem:item];
+    const auto &currentProps = *std::static_pointer_cast<VideoPlayerProps const>(strongSelf->_props);
+    NSString *propTitle = !currentProps.title.empty() ? [NSString stringWithUTF8String:currentProps.title.c_str()] : nil;
+    MediaMetadataInfo *resolvedInfo = [strongSelf.metadataResolver resolveWithExplicitTitle:propTitle
+                                                                                 playerItem:item
+                                                                                        url:url];
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [strongSelf.controlsLayer setTitle:resolvedInfo.title];
+    });
+  };
   [self.controlsLayer setFullscreen:props.fullscreen];
   [self.controlsLayer setShowFullscreenButton:props.showFullscreenButton];
 
@@ -357,11 +385,19 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
   if (props.autoHideTimeout > 0) {
     [self.controlsLayer setAutoHideTimeoutMs:props.autoHideTimeout];
   }
-  [self.controlsLayer setControlsVisible:props.controls];
+  [self.controlsLayer setControlsAllowed:props.controls];
 
-  if (!props.title.empty()) {
-    [self.controlsLayer setTitle:[NSString stringWithUTF8String:props.title.c_str()]];
-  }
+  // Auto-resolve title (explicit prop or URL slug fallback)
+  NSString *explicitTitle = !props.title.empty() ? [NSString stringWithUTF8String:props.title.c_str()] : nil;
+  MediaMetadataInfo *info = [self.metadataResolver resolveWithExplicitTitle:explicitTitle
+                                                                 playerItem:self.player.currentItem
+                                                                        url:url];
+  [self.controlsLayer setTitle:info.title];
+
+  // Asynchronously load thumbnail/frame
+  [self.thumbnailProvider loadThumbnailForURL:url
+                                  artworkData:info.artworkData
+                                   completion:^(UIImage * _Nullable image) {}];
   if (props.play) {
     _coordinator->requestPlay();
   }
@@ -598,7 +634,20 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
     [self.player pause];
     self.player = nil;
   }
+  [self.thumbnailProvider clearCache];
+  [self.subtitleManager attachPlayerItem:nil];
   _coordinator = nullptr;
+}
+
+#pragma mark - SubtitleManagerDelegate
+
+- (void)subtitleManager:(SubtitleManager *)manager
+     didUpdateSubtitles:(NSArray<SubtitleTrack *> *)subtitles
+         activeSubtitle:(nullable SubtitleTrack *)activeSubtitle {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self.controlsLayer setCaptionsVisible:(subtitles.count > 0)];
+    [self.controlsLayer setCaptionsActive:(activeSubtitle != nil)];
+  });
 }
 
 - (void)prepareForRecycle {

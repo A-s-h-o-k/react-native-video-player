@@ -20,6 +20,9 @@
 		2584BB2F2EF1D05A00C473C8 /* RCTVideoPlayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */; };
 		2584BB322EF1D2EF00C473C8 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */; };
 		25A000012EFF300000A1B2C3 /* NetworkAuthManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */; };
+		25B000042EFF400000A1B2C3 /* MediaMetadataResolver.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25B000032EFF400000A1B2C3 /* MediaMetadataResolver.mm */; };
+		25B000082EFF400000A1B2C3 /* SubtitleManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25B000072EFF400000A1B2C3 /* SubtitleManager.mm */; };
+		25B0000C2EFF400000A1B2C3 /* ThumbnailProvider.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25B0000B2EFF400000A1B2C3 /* ThumbnailProvider.mm */; };
 		6A4A24E34DE2DB930945705E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -51,6 +54,12 @@
 		2584BB312EF1D2EF00C473C8 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = NetworkAuthManager.mm; path = NetworkAuthManager.mm; sourceTree = "<group>"; };
 		25A000032EFF300000A1B2C3 /* NetworkAuthManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = NetworkAuthManager.h; path = NetworkAuthManager.h; sourceTree = "<group>"; };
+		25B000022EFF400000A1B2C3 /* MediaMetadataResolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MediaMetadataResolver.h; path = MediaMetadataResolver.h; sourceTree = "<group>"; };
+		25B000032EFF400000A1B2C3 /* MediaMetadataResolver.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = MediaMetadataResolver.mm; path = MediaMetadataResolver.mm; sourceTree = "<group>"; };
+		25B000062EFF400000A1B2C3 /* SubtitleManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SubtitleManager.h; path = SubtitleManager.h; sourceTree = "<group>"; };
+		25B000072EFF400000A1B2C3 /* SubtitleManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = SubtitleManager.mm; path = SubtitleManager.mm; sourceTree = "<group>"; };
+		25B0000A2EFF400000A1B2C3 /* ThumbnailProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ThumbnailProvider.h; path = ThumbnailProvider.h; sourceTree = "<group>"; };
+		25B0000B2EFF400000A1B2C3 /* ThumbnailProvider.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = ThumbnailProvider.mm; path = ThumbnailProvider.mm; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Player/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Player/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		87D197E4775130520D13CC75 /* libPods-Player.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Player.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -155,6 +164,9 @@
 				25688DEF2EFF200000E61244 /* PlayerStateCoordinator.cpp */,
 				25688DF62EFF200000E61244 /* Core */,
 				25A000042EFF300000A1B2C3 /* Network */,
+				25B000012EFF400000A1B2C3 /* Metadata */,
+				25B000052EFF400000A1B2C3 /* Subtitles */,
+				25B000092EFF400000A1B2C3 /* Thumbnail */,
 				255776A52F12764A00D9DD18 /* Common */,
 				25483ECB2EFD413900104BC5 /* Layers */,
 				2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */,
@@ -171,6 +183,33 @@
 				25A000022EFF300000A1B2C3 /* NetworkAuthManager.mm */,
 			);
 			path = Network;
+			sourceTree = "<group>";
+		};
+		25B000012EFF400000A1B2C3 /* Metadata */ = {
+			isa = PBXGroup;
+			children = (
+				25B000022EFF400000A1B2C3 /* MediaMetadataResolver.h */,
+				25B000032EFF400000A1B2C3 /* MediaMetadataResolver.mm */,
+			);
+			path = Metadata;
+			sourceTree = "<group>";
+		};
+		25B000052EFF400000A1B2C3 /* Subtitles */ = {
+			isa = PBXGroup;
+			children = (
+				25B000062EFF400000A1B2C3 /* SubtitleManager.h */,
+				25B000072EFF400000A1B2C3 /* SubtitleManager.mm */,
+			);
+			path = Subtitles;
+			sourceTree = "<group>";
+		};
+		25B000092EFF400000A1B2C3 /* Thumbnail */ = {
+			isa = PBXGroup;
+			children = (
+				25B0000A2EFF400000A1B2C3 /* ThumbnailProvider.h */,
+				25B0000B2EFF400000A1B2C3 /* ThumbnailProvider.mm */,
+			);
+			path = Thumbnail;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
@@ -235,6 +274,7 @@
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
+				2577A0012F12800000AABBCC /* SwiftLint */,
 				4D90EF4378CFBA72FFD96ECD /* [CP] Embed Pods Frameworks */,
 				A469C10511FD05BD1C68D608 /* [CP] Copy Pods Resources */,
 			);
@@ -292,6 +332,24 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		2577A0012F12800000AABBCC /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if which swiftlint >/dev/null 2>&1; then\n  swiftlint\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint or run brew install swiftlint\"\nfi\n";
+		};
 		00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -381,6 +439,9 @@
 				250543AA2FB08A75009C2C03 /* BottomSection.mm in Sources */,
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
 				2557C6F12F343C0800BCF74C /* CenterSection.mm in Sources */,
+				25B000042EFF400000A1B2C3 /* MediaMetadataResolver.mm in Sources */,
+				25B000082EFF400000A1B2C3 /* SubtitleManager.mm in Sources */,
+				25B0000C2EFF400000A1B2C3 /* ThumbnailProvider.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -495,7 +556,9 @@
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				DEAD_CODE_STRIPPING = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
@@ -565,7 +628,9 @@
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				DEAD_CODE_STRIPPING = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,

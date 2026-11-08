@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/overview/configuration-schema.json",
+  "entry": [
+    "App.tsx",
+    "src/index.tsx!",
+    "specs/VideoPlayerNativeComponent.ts!"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "specs/**/*.{ts,tsx}"
+  ],
+  "rules": {
+    "duplicates": "off"
+  },
+  "ignoreDependencies": [
+    "@react-native/new-app-screen",
+    "react-native-safe-area-context",
+    "@babel/preset-env",
+    "@babel/runtime"
+  ]
+}

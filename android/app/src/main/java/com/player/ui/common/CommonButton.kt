@@ -62,12 +62,6 @@ class CommonButton @JvmOverloads constructor(
     }
 
     private fun applyStyleAndSize() {
-        val dimensionPx = if (buttonSize == CommonButtonSize.CUSTOM) {
-            layoutParams?.width ?: dpToPx(48)
-        } else {
-            dpToPx(buttonSize.dp)
-        }
-
         // Background shape
         val backgroundDrawable = GradientDrawable().apply {
             shape = GradientDrawable.OVAL

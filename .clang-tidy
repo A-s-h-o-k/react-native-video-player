@@ -1,0 +1,19 @@
+---
+Checks: >
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  performance-*,
+  readability-*,
+  -readability-identifier-length,
+  misc-unused-parameters,
+  misc-unused-using-decls
+
+WarningsAsErrors: ''
+HeaderFilterRegex: 'cpp/.*'
+FormatStyle: file
+CheckOptions:
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+...
+

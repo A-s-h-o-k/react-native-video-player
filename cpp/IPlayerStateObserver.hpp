@@ -22,7 +22,7 @@ public:
     virtual void onBufferUpdated(double bufferedTime, double percentage) = 0;
     virtual void onMuteChanged(bool isMuted, float volume) = 0;
     virtual void onPlaybackRateChanged(float rate) = 0;
-    virtual void onNetworkMetricsUpdated(double pingMs, double bandwidthBitrateBps) {}
+    virtual void onNetworkMetricsUpdated(double /*pingMs*/, double /*bandwidthBitrateBps*/) {}
     virtual void onError(int errorCode, const std::string& message) = 0;
 };
 

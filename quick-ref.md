@@ -19,6 +19,8 @@ This repository maintains living architectural documentation. Every document has
 | [sections_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/sections_arch.md) | **Section Layouts & Delegates** | • 3-Section breakdown: `TopSection`, `CenterSection`, `BottomSection`<br>• Decoupled communication protocols (`CenterSectionDelegate`, `TopSectionDelegate`, `BottomSectionDelegate`)<br>• Apple TV & Android TV 2D remote focus navigation grid |
 | [layout_builder_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/layout_builder_arch.md) | **Custom Layout Builder** | • 2-Pillar architecture (Turnkey vs Declarative Custom Builder)<br>• Layout schema specification (`LayoutNode`, element types, style map)<br>• Dual execution modes: Runtime Inflater (SDUI) vs Build-Time AOT (CLI)<br>• Zero-cost fast-path routing for turnkey player<br>• Primitive catalog & C++ state coordinator binding |
 | [button_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/button_arch.md) | **Base Button Primitive** | • `CommonButton` foundation (iOS & Android)<br>• Sizing presets (Small, Medium, Large)<br>• Apple HIG 44×44pt & Material 48×48dp minimum touch targets<br>• Spring micro-interactions & Material ripple<br>• tvOS & Android TV focus engine scaling (1.15x)<br>• VoiceOver & TalkBack accessibility |
+| [TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md) | **Testing Architecture & Enterprise Benchmarks** | • Multi-tier testing pyramid (C++ Core, Native Engines, UI, Fabric, E2E)<br>• Enterprise stress, memory leak, 12h soak, and chaos testing<br>• Production benchmarks (TTFF, 60fps scrub, rebuffer ratio, memory delta)<br>• Automated CI vs. manual matrix and copy-pasteable test scripts |
+| [metadata_subtitles_thumbnail_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/metadata_subtitles_thumbnail_arch.md) | **Metadata, Subtitles & Thumbnail Subsystems** | • Isolated `MediaMetadataResolver` for MP4/ID3/ICY/URL slug titles<br>• Dedicated `SubtitleManager` for text track query and language selection<br>• Asynchronous `ThumbnailProvider` with frame extraction at 1.0s and memory caching |
 | [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) | **Index & Update Guide** | • This document: fast lookup index, code mapping, and update triggers |
 
 ---
@@ -81,6 +83,10 @@ graph TD
 8. **If you modify Custom Layout Builder, Schemas, or Parsers**:
    - **Files**: `src/dynamic/*`, `scripts/compile-layout.ts`, or layout schemas
    - **Update**: [layout_builder_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/layout_builder_arch.md).
+
+9. **If you modify Testing Infrastructure, Soak Scripts, or Performance Benchmarks**:
+   - **Files**: `scripts/test-*`, `__tests__/*`, `tests/`, benchmark thresholds
+   - **Update**: [TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md).
 
 ---
 

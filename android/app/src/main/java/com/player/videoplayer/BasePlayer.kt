@@ -8,6 +8,7 @@ import android.content.Context
 import android.view.Gravity
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Metadata
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
@@ -42,6 +43,8 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
 
     var onPlaybackStateListener: ((state: Int, isPlaying: Boolean) -> Unit)? = null
     var onMetadataListener: ((metadata: Metadata) -> Unit)? = null
+    var onMediaMetadataChangedListener: ((mediaMetadata: MediaMetadata) -> Unit)? = null
+    var onTracksChangedListener: ((tracks: androidx.media3.common.Tracks) -> Unit)? = null
     var onNetworkMetricsListener: ((pingMs: Long, throughputBps: Long) -> Unit)? = null
     var onVideoSizeChangedListener: ((width: Int, height: Int) -> Unit)? = null
 
@@ -100,6 +103,12 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
             }
             override fun onMetadata(metadata: Metadata) {
                 onMetadataListener?.invoke(metadata)
+            }
+            override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+                onMediaMetadataChangedListener?.invoke(mediaMetadata)
+            }
+            override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                onTracksChangedListener?.invoke(tracks)
             }
         })
         this.player.addAnalyticsListener(object : AnalyticsListener {

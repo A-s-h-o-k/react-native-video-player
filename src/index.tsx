@@ -3,7 +3,6 @@ import {
   Image,
   ImageSourcePropType,
   StyleSheet,
-  StyleProp,
   ViewProps,
 } from 'react-native';
 
@@ -234,12 +233,12 @@ export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
       ? { ...(baseConfig.icons || {}), ...(icons || {}) }
       : undefined;
 
-    const resolvedSkipInterval = skipInterval ?? baseConfig.behavior?.skipInterval;
-    const resolvedAutoHideTimeout = autoHideTimeout ?? baseConfig.behavior?.autoHideTimeout;
-    const resolvedShowRewindButton = showRewindButton ?? baseConfig.behavior?.showRewindButton;
-    const resolvedShowForwardButton = showForwardButton ?? baseConfig.behavior?.showForwardButton;
-    const resolvedShowPlayPauseButton = showPlayPauseButton ?? baseConfig.behavior?.showPlayPauseButton;
-    const resolvedShowFullscreenButton = showFullscreenButton ?? baseConfig.behavior?.showFullscreenButton;
+    const resolvedSkipInterval = skipInterval ?? baseConfig.behavior?.skipInterval ?? 10;
+    const resolvedAutoHideTimeout = autoHideTimeout ?? baseConfig.behavior?.autoHideTimeout ?? 5000;
+    const resolvedShowRewindButton = showRewindButton ?? baseConfig.behavior?.showRewindButton ?? true;
+    const resolvedShowForwardButton = showForwardButton ?? baseConfig.behavior?.showForwardButton ?? true;
+    const resolvedShowPlayPauseButton = showPlayPauseButton ?? baseConfig.behavior?.showPlayPauseButton ?? true;
+    const resolvedShowFullscreenButton = showFullscreenButton ?? baseConfig.behavior?.showFullscreenButton ?? false;
     const resolvedControls = controls ?? baseConfig.behavior?.controls ?? true;
 
     const serializedHeaders = headers ? JSON.stringify(headers) : undefined;

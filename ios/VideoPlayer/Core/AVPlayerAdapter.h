@@ -21,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, strong, readonly, nullable) AVPlayer *player;
 @property (nonatomic, strong, readonly) NetworkAuthManager *networkAuthManager;
+@property (nonatomic, copy, nullable) void (^onItemReadyToPlay)(AVPlayerItem *item);
 
 #ifdef __cplusplus
 - (instancetype)initWithCoordinator:(PlayerCore::PlayerStateCoordinator *)coordinator;

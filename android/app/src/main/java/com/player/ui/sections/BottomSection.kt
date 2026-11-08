@@ -139,10 +139,12 @@ class BottomSection @JvmOverloads constructor(
         durationLabel.text = formatTime(durationSeconds)
     }
 
-    fun updateBuffer(bufferedTimeSeconds: Double, percentage: Double) {
+    fun updateBuffer(bufferedTimeSeconds: Double, percentage: Double = 0.0) {
         if (seekBar.max > 0) {
             val target = (bufferedTimeSeconds * 1000.0).toInt().coerceIn(0, seekBar.max)
             seekBar.secondaryProgress = target
+        } else if (percentage in 0.0..100.0) {
+            seekBar.secondaryProgress = percentage.toInt()
         }
     }
 
@@ -167,7 +169,7 @@ class BottomSection @JvmOverloads constructor(
     }
 
     fun setTrackColor(color: Int) {
-        // Track background tint
+        seekBar.progressBackgroundTintList = ColorStateList.valueOf(color)
     }
 
     fun setBufferColor(color: Int) {

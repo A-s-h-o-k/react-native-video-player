@@ -100,4 +100,12 @@
     self.titleLabel.text = title ?: @"";
 }
 
+- (void)setCaptionsVisible:(BOOL)visible {
+    self.captionsButton.hidden = !visible;
+}
+
+- (void)setCaptionsActive:(BOOL)active {
+    self.captionsButton.alpha = active ? 1.0 : 0.5;
+}
+
 @end

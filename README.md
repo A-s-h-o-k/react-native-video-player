@@ -18,6 +18,7 @@ An enterprise-grade, high-performance, cross-platform video player for React Nat
 | **[network_auth_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/network_auth_arch.md)** | **Networking, Auth & DRM** (FairPlay, Widevine, custom headers, token refresh) |
 | **[analytics_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/analytics_arch.md)** | **Analytics & Plugin Architecture** (Vendor-agnostic plugins, QoE/QoS schemas, heartbeat) |
 | **[button_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/button_arch.md)** | **Base Button Primitive** (`CommonButton` touch targets, TV focus, A11y) |
+| **[TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md)** | **Testing Architecture & Enterprise Benchmarks** (Multi-tier testing pyramid, memory soak, load, chaos, benchmarks) |
 | **[AGENTS.md](file:///Users/ashokammineni/video-player/new_2/Player/AGENTS.md)** | **Governance & Engineering Rules** (Strict user approval, 11 core principles) |
 
 ---

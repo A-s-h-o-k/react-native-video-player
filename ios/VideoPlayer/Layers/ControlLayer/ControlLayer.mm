@@ -8,6 +8,7 @@
 #import "ControlLayer.h"
 #import "TopSection.h"
 #import "BottomSection.h"
+#import "../../Generated/PlayerThemeGenerated.h"
 
 #pragma mark - C++ Observer Implementation
 
@@ -16,7 +17,7 @@ public:
     ControlLayerObserverImpl(__weak ControlLayer *layer) : layer_(layer) {}
     virtual ~ControlLayerObserverImpl() = default;
 
-    void onStateChanged(PlayerCore::PlaybackState newState, PlayerCore::PlaybackState oldState) override {
+    void onStateChanged(PlayerCore::PlaybackState newState, PlayerCore::PlaybackState /*oldState*/) override {
         dispatch_async(dispatch_get_main_queue(), ^{
             ControlLayer *l = layer_;
             if (!l) return;
@@ -54,9 +55,9 @@ public:
             [l.bottomControlView updateBufferTime:bufferedTime percentage:percentage];
         });
     }
-    void onMuteChanged(bool isMuted, float volume) override {}
-    void onPlaybackRateChanged(float rate) override {}
-    void onError(int errorCode, const std::string& message) override {}
+    void onMuteChanged(bool /*isMuted*/, float /*volume*/) override {}
+    void onPlaybackRateChanged(float /*rate*/) override {}
+    void onError(int /*errorCode*/, const std::string& /*message*/) override {}
 
 private:
     __weak ControlLayer *layer_;
@@ -89,8 +90,8 @@ static UIColor *ColorFromHexString(NSString *hexString) {
     std::shared_ptr<ControlLayerObserverImpl> _observer;
     NSInteger _autoHideTimeoutMs;
     BOOL _controlsAllowed;
+    BOOL _controlsVisible;
 }
-@property (nonatomic, assign) BOOL controlsVisible;
 @property (nonatomic, strong, nullable) NSTimer *autoHideTimer;
 @property (nonatomic, assign, readwrite) BOOL isFullscreen;
 @property (nonatomic, strong) NSArray<NSLayoutConstraint *> *topSectionConstraints;
@@ -112,8 +113,36 @@ static UIColor *ColorFromHexString(NSString *hexString) {
     self.backgroundColor = UIColor.clearColor;
     self.translatesAutoresizingMaskIntoConstraints = NO;
     [self setupUI:frame];
+    [self applyAotGeneratedTheme];
   }
   return self;
+}
+
+- (void)applyAotGeneratedTheme {
+  _autoHideTimeoutMs = THEME_GEN_AUTO_HIDE_TIMEOUT;
+  [self setAccentColorHex:THEME_GEN_ACCENT_COLOR];
+  [self setTrackColorHex:THEME_GEN_TRACK_COLOR];
+  [self setBufferColorHex:THEME_GEN_BUFFER_COLOR];
+  [self setSkipIntervalSeconds:THEME_GEN_SKIP_INTERVAL];
+  [self setShowRewindButton:THEME_GEN_SHOW_REWIND_BUTTON];
+  [self setShowForwardButton:THEME_GEN_SHOW_FORWARD_BUTTON];
+  [self setShowPlayPauseButton:THEME_GEN_SHOW_PLAY_PAUSE_BUTTON];
+  [self setShowFullscreenButton:THEME_GEN_SHOW_FULLSCREEN_BUTTON];
+
+  NSMutableDictionary<NSString *, NSString *> *aotIcons = [NSMutableDictionary dictionary];
+  if (THEME_GEN_ICON_PLAY.length > 0) aotIcons[@"play"] = THEME_GEN_ICON_PLAY;
+  if (THEME_GEN_ICON_PAUSE.length > 0) aotIcons[@"pause"] = THEME_GEN_ICON_PAUSE;
+  if (THEME_GEN_ICON_REPLAY.length > 0) aotIcons[@"replay"] = THEME_GEN_ICON_REPLAY;
+  if (THEME_GEN_ICON_REWIND.length > 0) aotIcons[@"rewind"] = THEME_GEN_ICON_REWIND;
+  if (THEME_GEN_ICON_FORWARD.length > 0) aotIcons[@"forward"] = THEME_GEN_ICON_FORWARD;
+  if (THEME_GEN_ICON_FULLSCREEN_ENTER.length > 0) aotIcons[@"fullscreenEnter"] = THEME_GEN_ICON_FULLSCREEN_ENTER;
+  if (THEME_GEN_ICON_FULLSCREEN_EXIT.length > 0) aotIcons[@"fullscreenExit"] = THEME_GEN_ICON_FULLSCREEN_EXIT;
+  if (THEME_GEN_ICON_SLIDER_THUMB.length > 0) aotIcons[@"sliderThumb"] = THEME_GEN_ICON_SLIDER_THUMB;
+
+  if (aotIcons.count > 0) {
+    [self.centerControlView setCustomIcons:aotIcons];
+    [self.bottomControlView setCustomIcons:aotIcons];
+  }
 }
 
 - (void)setupUI:(CGRect)frame {
@@ -348,6 +377,9 @@ static UIColor *ColorFromHexString(NSString *hexString) {
 
 - (void)topSectionDidTapCaptions:(TopSection *)section {
   [self invalidateAutoHideTimer];
+  if (self.onCaptionsToggleRequested) {
+    self.onCaptionsToggleRequested();
+  }
 }
 
 - (void)topSectionDidTapSettings:(TopSection *)section {
@@ -356,6 +388,14 @@ static UIColor *ColorFromHexString(NSString *hexString) {
 
 - (void)setTitle:(NSString *)title {
   [self.topControlView setTitle:title];
+}
+
+- (void)setCaptionsVisible:(BOOL)visible {
+  [self.topControlView setCaptionsVisible:visible];
+}
+
+- (void)setCaptionsActive:(BOOL)active {
+  [self.topControlView setCaptionsActive:active];
 }
 
 - (void)togglePlayPauseFallback {
@@ -411,8 +451,17 @@ static UIColor *ColorFromHexString(NSString *hexString) {
 
 #pragma mark - Visibility & Auto-Hide Lifecycle
 
+- (BOOL)controlsVisible {
+  return _controlsVisible;
+}
+
+- (BOOL)isControlsVisible {
+  return _controlsVisible;
+}
+
 - (void)handleBackgroundTap:(UITapGestureRecognizer *)recognizer {
-  if (self.controlsVisible) {
+  if (!_controlsAllowed) return;
+  if (_controlsVisible) {
     [self hideControlsAnimated:YES];
   } else {
     [self showControlsAnimated:YES];
@@ -420,8 +469,9 @@ static UIColor *ColorFromHexString(NSString *hexString) {
 }
 
 - (void)showControlsAnimated:(BOOL)animated {
+  if (!_controlsAllowed) return;
   [self invalidateAutoHideTimer];
-  self.controlsVisible = YES;
+  _controlsVisible = YES;
   self.controlsContainerView.hidden = NO;
 
   void (^showBlock)(void) = ^{
@@ -441,15 +491,15 @@ static UIColor *ColorFromHexString(NSString *hexString) {
 
 - (void)hideControlsAnimated:(BOOL)animated {
   [self invalidateAutoHideTimer];
-  self.controlsVisible = NO;
+  _controlsVisible = NO;
 
   void (^hideBlock)(void) = ^{
     self.controlsContainerView.alpha = 0.0;
   };
 
   if (animated) {
-    [UIView animateWithDuration:0.25 animations:hideBlock completion:^(BOOL finished) {
-      if (!self.controlsVisible) {
+    [UIView animateWithDuration:0.25 animations:hideBlock completion:^(__unused BOOL finished) {
+      if (!self->_controlsVisible) {
         self.controlsContainerView.hidden = YES;
       }
     }];
@@ -525,9 +575,23 @@ static UIColor *ColorFromHexString(NSString *hexString) {
   [self resetAutoHideTimer];
 }
 
+- (void)setControlsAllowed:(BOOL)allowed {
+  _controlsAllowed = allowed;
+  if (!allowed) {
+    [self invalidateAutoHideTimer];
+    _controlsVisible = NO;
+    self.controlsContainerView.alpha = 0.0;
+    self.controlsContainerView.hidden = YES;
+    self.hidden = YES;
+  } else {
+    self.hidden = NO;
+    self.userInteractionEnabled = YES;
+    [self showControlsAnimated:NO];
+  }
+}
+
 - (void)setControlsVisible:(BOOL)visible {
-  _controlsAllowed = visible;
-  self.hidden = !visible;
+  [self setControlsAllowed:visible];
 }
 
 - (void)scheduleAutoHideControls {

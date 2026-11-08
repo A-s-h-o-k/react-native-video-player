@@ -144,7 +144,7 @@
         req.HTTPBody = spcData;
 
         // Attach custom DRM headers
-        [self.drmHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, BOOL *stop) {
+        [self.drmHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, __unused BOOL *stop) {
             [req setValue:obj forHTTPHeaderField:key];
         }];
 

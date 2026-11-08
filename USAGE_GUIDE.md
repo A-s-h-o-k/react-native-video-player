@@ -331,6 +331,46 @@ export function SkinnedPlayer() {
 
 ---
 
+### Recipe 8: Ahead-Of-Time (AOT) Build-Time Theming & Asset Bundling
+
+For maximum performance ($0\text{ms}$ runtime overhead), bake your design tokens and custom icon images directly into the native iOS and Android binaries at compile time:
+
+1. **Create `player-theme.json` in your project root**:
+   ```json
+   {
+     "theme": {
+       "accentColor": "#E50914",
+       "trackColor": "rgba(255, 255, 255, 0.25)",
+       "bufferColor": "rgba(229, 9, 20, 0.35)"
+     },
+     "icons": {
+       "play": "./custom-assets/play.png",
+       "pause": "./custom-assets/pause.png",
+       "sliderThumb": "./custom-assets/notch.png",
+       "rewind": "gobackward.10",
+       "forward": "goforward.10"
+     },
+     "behavior": {
+       "skipInterval": 10,
+       "autoHideTimeout": 4000
+     },
+     "strict": true
+   }
+   ```
+
+2. **Run the AOT Theme Compiler**:
+   ```bash
+   npm run build:theme
+   ```
+   - Automatically validates colors, numbers, and asset files. If a file is missing, it fails fast with an exact error message.
+   - Automatically copies image files to Android `res/drawable/` and iOS resources.
+   - Inlines constants into `PlayerThemeGenerated.kt` (Android) and `PlayerThemeGenerated.h` (iOS).
+
+3. **Render `<VideoPlayer />`**:
+   Zero props required! The player mounts with your custom theme and icons already compiled into native machine code.
+
+---
+
 ## 5. Built-In Native Behaviors (Zero Configuration Required)
 
 When you render `<VideoPlayer />`, the following high-performance native features operate automatically:

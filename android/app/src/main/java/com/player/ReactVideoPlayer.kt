@@ -10,16 +10,23 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.player.core.PlaybackState
 import com.player.core.PlayerEngineBridge
 import com.player.core.PlayerStateCoordinator
 import com.player.core.PlayerStateObserver
+import com.player.metadata.MediaMetadataResolver
 import com.player.network.DrmConfig
 import com.player.network.DrmType
+import com.player.subtitles.SubtitleListener
+import com.player.subtitles.SubtitleManager
+import com.player.subtitles.SubtitleTrack
+import com.player.thumbnail.ThumbnailProvider
 import com.player.ui.ControlLayer
 import com.player.videoplayer.BasePlayer
 import org.json.JSONObject
@@ -27,6 +34,7 @@ import org.json.JSONObject
 class ReactVideoPlayer : FrameLayout {
 
     private var videoUrl: String = ""
+    private var explicitTitle: String = ""
     private var headerMap: Map<String, String>? = null
     private var drmConfig: DrmConfig? = null
     private var isFullscreen: Boolean = false
@@ -38,6 +46,36 @@ class ReactVideoPlayer : FrameLayout {
     private lateinit var playerRef: BasePlayer
     private lateinit var controlLayer: ControlLayer
     private lateinit var coordinator: PlayerStateCoordinator
+    private val metadataResolver = MediaMetadataResolver()
+    private lateinit var subtitleManager: SubtitleManager
+    private val thumbnailProvider by lazy { ThumbnailProvider(context) }
+
+    private var isLifecycleRegistered: Boolean = false
+    private val lifecycleEventListener = object : LifecycleEventListener {
+        override fun onHostResume() {
+            // Video remains paused where user left off (matching iOS default)
+        }
+
+        override fun onHostPause() {
+            // Automatically pause playback when app is minimized or backgrounded (matching iOS)
+            if (::coordinator.isInitialized && ::playerRef.isInitialized && playerRef.player.isPlaying) {
+                coordinator.requestPause()
+            }
+        }
+
+        override fun onHostDestroy() {
+            cleanUp()
+        }
+    }
+
+    private fun getThemedReactContext(): ThemedReactContext? {
+        var ctx: Context? = context
+        while (ctx is ContextWrapper) {
+            if (ctx is ThemedReactContext) return ctx
+            ctx = ctx.baseContext
+        }
+        return null
+    }
 
     constructor(context: Context) : super(context) {
         configureComponent()
@@ -160,6 +198,35 @@ class ReactVideoPlayer : FrameLayout {
                 }
             }
         }
+
+        // 6. Initialize SubtitleManager & hook captions toggle
+        this.subtitleManager = SubtitleManager(playerRef.player).apply {
+            listener = object : SubtitleListener {
+                override fun onSubtitlesChanged(availableTracks: List<SubtitleTrack>, activeTrack: SubtitleTrack?) {
+                    post {
+                        controlLayer.setCaptionsVisible(availableTracks.isNotEmpty())
+                        controlLayer.setCaptionsActive(activeTrack != null)
+                    }
+                }
+            }
+        }
+        this.controlLayer.onCaptionsToggleRequested = {
+            subtitleManager.toggleSubtitles()
+        }
+
+        // 7. Hook metadata resolution & tracks change
+        playerRef.onMediaMetadataChangedListener = { mediaMetadata ->
+            val resolved = metadataResolver.resolve(explicitTitle, mediaMetadata, videoUrl)
+            post {
+                controlLayer.setTitle(resolved.title)
+                if (resolved.artworkBytes != null) {
+                    thumbnailProvider.loadThumbnail(videoUrl, resolved.artworkBytes, headerMap) { _ -> }
+                }
+            }
+        }
+        playerRef.onTracksChangedListener = { tracks ->
+            subtitleManager.onTracksChanged(tracks)
+        }
     }
 
     fun emitOnScriptLoaded() {
@@ -232,12 +299,22 @@ class ReactVideoPlayer : FrameLayout {
         this.videoUrl = url
         this.playerRef.videoUrl = url
         this.playerRef.configureNetwork(headerMap, drmConfig)
+
+        // Automatically resolve initial title (from explicit prop or URL slug fallback)
+        val initialMetadata = metadataResolver.resolve(explicitTitle, null, url)
+        controlLayer.setTitle(initialMetadata.title)
+
+        // Asynchronously fetch or extract preview thumbnail
+        thumbnailProvider.loadThumbnail(url, null, headerMap) { _ -> }
+
         this.playerRef.startPlayer()
         coordinator.notifyEngineState(PlaybackState.Loading)
     }
 
     fun setTitle(title: String) {
-        controlLayer.setTitle(title)
+        this.explicitTitle = title
+        val resolved = metadataResolver.resolve(title, null, videoUrl)
+        controlLayer.setTitle(resolved.title)
     }
 
     fun setResizeMode(mode: String?) {
@@ -253,6 +330,10 @@ class ReactVideoPlayer : FrameLayout {
     }
 
     fun cleanUp() {
+        if (isLifecycleRegistered) {
+            getThemedReactContext()?.removeLifecycleEventListener(lifecycleEventListener)
+            isLifecycleRegistered = false
+        }
         if (isFullscreen) {
             setFullscreen(false, notifyJS = false)
         }
@@ -261,6 +342,7 @@ class ReactVideoPlayer : FrameLayout {
         } catch (_: Exception) {}
         fullscreenDialog = null
         fullscreenContainer = null
+        thumbnailProvider.release()
         coordinator.release()
         playerRef.cleanUp()
     }
@@ -287,6 +369,10 @@ class ReactVideoPlayer : FrameLayout {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        if (!isLifecycleRegistered) {
+            getThemedReactContext()?.addLifecycleEventListener(lifecycleEventListener)
+            isLifecycleRegistered = true
+        }
         androidx.core.view.ViewCompat.requestApplyInsets(this)
         post {
             requestLayout()

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
@@ -41,7 +40,7 @@ function App(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <View style={styles.container}>
         <View style={styles.videoWrapper}>
@@ -52,7 +51,7 @@ function App(): React.JSX.Element {
               style={styles.player}
               play={isPlaying}
               showFullscreenButton={true}
-              autoAdjustSafeArea={autoAdjust}
+              autoAdjustSafeArea={true}
               readFromJson={themeMode === 'bundledJson'}
               config={themeMode === 'customRed' ? customRedTheme : undefined}
               onFullscreenChange={(e) => {
@@ -120,7 +119,7 @@ function App(): React.JSX.Element {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

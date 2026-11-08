@@ -209,6 +209,7 @@ public:
   - `onIsPlayingChanged(isPlaying)`: Dispatches `PLAYING` or `PAUSED`.
   - `onVideoSizeChanged(videoSize)`: Dispatches dimensions.
 - **Timing**: Runs a lightweight periodic `Runnable` on the Android Main Looper during `PLAYING` states.
+- **App Lifecycle & Background Auto-Pause**: Registers a `LifecycleEventListener` on `ThemedReactContext`. When the host Activity transitions to `onHostPause()` (app backgrounded or minimized), it triggers `coordinator.requestPause()` to automatically pause playback and stop audio (achieving full parity with iOS default behavior). When `onHostDestroy()` occurs, it executes `cleanUp()` to release all hardware decoders and dismiss any active fullscreen dialog.
 
 ---
 

@@ -98,6 +98,14 @@ class TopSection @JvmOverloads constructor(
         titleLabel.text = title
     }
 
+    fun setCaptionsVisible(visible: Boolean) {
+        captionsButton.visibility = if (visible) VISIBLE else GONE
+    }
+
+    fun setCaptionsActive(active: Boolean) {
+        captionsButton.alpha = if (active) 1.0f else 0.5f
+    }
+
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
     }

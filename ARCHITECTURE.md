@@ -254,6 +254,14 @@ The native control overlay is composed of modular native sections hosted inside 
   - iOS Root: [RCTVideoPlayer.h](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/RCTVideoPlayer.h) & [RCTVideoPlayer.mm](file:///Users/ashokammineni/video-player/new_2/Player/ios/VideoPlayer/RCTVideoPlayer.mm) (Pure Fabric `RCTViewComponentView` subclass with typed C++ `Props`).
   - Android Root: [ReactVideoPlayerManager.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ReactVideoPlayerManager.kt) & [ReactVideoPlayer.kt](file:///Users/ashokammineni/video-player/new_2/Player/android/app/src/main/java/com/player/ReactVideoPlayer.kt).
   - [App.tsx](file:///Users/ashokammineni/video-player/new_2/Player/App.tsx): Clean demo screen rendering `<VideoPlayer />`.
+- **Testing Architecture & Enterprise Benchmarks**:
+  - Architecture Spec: [TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md) (Multi-tier testing pyramid from C++ GoogleTest/ASan to Maestro E2E, 100-cycle memory soak, 12h soak, chaos network injection, and industry production benchmarks table).
+- **Metadata, Subtitles & Thumbnail Subsystems**:
+  - `MediaMetadataResolver`: Cross-platform 3-tier resolver checking explicit prop overrides, embedded container tags (MP4 `©nam`, ID3 `TIT2`, ICY stream title), and clean URL slug sanitization.
+  - `SubtitleManager`: Queries legible text tracks (`C.TRACK_TYPE_TEXT` on Android, `AVMediaCharacteristicLegible` on iOS), manages language selection, and wires dynamically to the `TopSection` captions button.
+  - `ThumbnailProvider`: Asynchronous 1.0s video frame capture (`MediaMetadataRetriever` / `AVAssetImageGenerator`) with embedded `covr` art decoding and in-memory LRU caching.
+  - Android HLS Parity: Added `androidx.media3:media3-exoplayer-hls` for full cross-platform adaptive streaming parity.
+  - Architecture Spec: [metadata_subtitles_thumbnail_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/metadata_subtitles_thumbnail_arch.md).
 
 ---
 

@@ -34,6 +34,7 @@ class ControlLayer @JvmOverloads constructor(
     var isFullscreen: Boolean = false
         private set
     var onFullscreenToggleRequested: ((Boolean) -> Unit)? = null
+    var onCaptionsToggleRequested: (() -> Unit)? = null
     var autoHideTimeoutMs: Long = 5000L
 
     val topSection: TopSection
@@ -61,11 +62,9 @@ class ControlLayer @JvmOverloads constructor(
                     lastReportedBuffer = buffered
                     coordinator?.notifyEngineBuffer(buffered)
                 }
-                if (coordinator == null) {
-                    bottomSection.updateTime(current, duration)
-                    val pct = if (duration > 0.0) Math.min(100.0, (buffered / duration) * 100.0) else 0.0
-                    bottomSection.updateBuffer(buffered, pct)
-                }
+                bottomSection.updateTime(current, duration)
+                val pct = if (duration > 0.0) Math.min(100.0, (buffered / duration) * 100.0) else 0.0
+                bottomSection.updateBuffer(buffered, pct)
             }
             if (isPlaying) {
                 mainHandler.postDelayed(this, 250L) // 4 times a second
@@ -125,6 +124,36 @@ class ControlLayer @JvmOverloads constructor(
         // 5. Background Tap to Toggle
         setOnClickListener {
             toggleControls()
+        }
+
+        // 6. Apply AOT Build-Time Compiled Theme (Zero Runtime Overhead)
+        applyAotGeneratedTheme()
+    }
+
+    private fun applyAotGeneratedTheme() {
+        autoHideTimeoutMs = com.player.ui.generated.PlayerThemeGenerated.AUTO_HIDE_TIMEOUT.toLong()
+        setAccentColor(com.player.ui.generated.PlayerThemeGenerated.ACCENT_COLOR)
+        setTrackColor(com.player.ui.generated.PlayerThemeGenerated.TRACK_COLOR)
+        setBufferColor(com.player.ui.generated.PlayerThemeGenerated.BUFFER_COLOR)
+        setSkipInterval(com.player.ui.generated.PlayerThemeGenerated.SKIP_INTERVAL)
+        setShowRewindButton(com.player.ui.generated.PlayerThemeGenerated.SHOW_REWIND_BUTTON)
+        setShowForwardButton(com.player.ui.generated.PlayerThemeGenerated.SHOW_FORWARD_BUTTON)
+        setShowPlayPauseButton(com.player.ui.generated.PlayerThemeGenerated.SHOW_PLAY_PAUSE_BUTTON)
+        setShowFullscreenButton(com.player.ui.generated.PlayerThemeGenerated.SHOW_FULLSCREEN_BUTTON)
+
+        val aotIcons = mutableMapOf<String, String>()
+        if (com.player.ui.generated.PlayerThemeGenerated.ICON_PLAY.isNotEmpty()) aotIcons["play"] = com.player.ui.generated.PlayerThemeGenerated.ICON_PLAY
+        if (com.player.ui.generated.PlayerThemeGenerated.ICON_PAUSE.isNotEmpty()) aotIcons["pause"] = com.player.ui.generated.PlayerThemeGenerated.ICON_PAUSE
+        if (com.player.ui.generated.PlayerThemeGenerated.ICON_REPLAY.isNotEmpty()) aotIcons["replay"] = com.player.ui.generated.PlayerThemeGenerated.ICON_REPLAY
+        if (com.player.ui.generated.PlayerThemeGenerated.ICON_REWIND.isNotEmpty()) aotIcons["rewind"] = com.player.ui.generated.PlayerThemeGenerated.ICON_REWIND
+        if (com.player.ui.generated.PlayerThemeGenerated.ICON_FORWARD.isNotEmpty()) aotIcons["forward"] = com.player.ui.generated.PlayerThemeGenerated.ICON_FORWARD
+        if (com.player.ui.generated.PlayerThemeGenerated.ICON_FULLSCREEN_ENTER.isNotEmpty()) aotIcons["fullscreenEnter"] = com.player.ui.generated.PlayerThemeGenerated.ICON_FULLSCREEN_ENTER
+        if (com.player.ui.generated.PlayerThemeGenerated.ICON_FULLSCREEN_EXIT.isNotEmpty()) aotIcons["fullscreenExit"] = com.player.ui.generated.PlayerThemeGenerated.ICON_FULLSCREEN_EXIT
+        if (com.player.ui.generated.PlayerThemeGenerated.ICON_SLIDER_THUMB.isNotEmpty()) aotIcons["sliderThumb"] = com.player.ui.generated.PlayerThemeGenerated.ICON_SLIDER_THUMB
+
+        if (aotIcons.isNotEmpty()) {
+            centerSection.customIcons = aotIcons
+            bottomSection.customIcons = aotIcons
         }
     }
 
@@ -228,6 +257,16 @@ class ControlLayer @JvmOverloads constructor(
     fun setFullscreen(fullscreen: Boolean) {
         this.isFullscreen = fullscreen
         bottomSection.setFullscreen(fullscreen)
+        player?.let { p ->
+            val current = p.currentPosition.toDouble() / 1000.0
+            val duration = p.duration.coerceAtLeast(0L).toDouble() / 1000.0
+            val buffered = p.bufferedPosition.coerceAtLeast(0L).toDouble() / 1000.0
+            bottomSection.updateTime(current, duration)
+            if (duration > 0.0) {
+                val pct = Math.min(100.0, (buffered / duration) * 100.0)
+                bottomSection.updateBuffer(buffered, pct)
+            }
+        }
     }
 
     fun setShowFullscreenButton(show: Boolean) {
@@ -311,6 +350,7 @@ class ControlLayer @JvmOverloads constructor(
 
     override fun onCaptionsClicked() {
         cancelAutoHideTimer()
+        onCaptionsToggleRequested?.invoke()
     }
 
     override fun onSettingsClicked() {
@@ -319,6 +359,14 @@ class ControlLayer @JvmOverloads constructor(
 
     fun setTitle(title: String) {
         topSection.setTitle(title)
+    }
+
+    fun setCaptionsVisible(visible: Boolean) {
+        topSection.setCaptionsVisible(visible)
+    }
+
+    fun setCaptionsActive(active: Boolean) {
+        topSection.setCaptionsActive(active)
     }
 
     // --- Time Updater ---
@@ -416,24 +464,63 @@ class ControlLayer @JvmOverloads constructor(
         this.safeAreaTopInset = topInset
         this.safeAreaBottomInset = bottomInset
         if (width > 0 && height > 0) {
-            val topH = topSection.measuredHeight
-            topSection.layout(0, safeAreaTopInset, width, safeAreaTopInset + topH)
-            val bottomH = bottomSection.measuredHeight
-            bottomSection.layout(0, height - safeAreaBottomInset - bottomH, width, height - safeAreaBottomInset)
+            layoutSections(width, height)
         }
         requestLayout()
+    }
+
+    private fun layoutSections(width: Int, height: Int) {
+        if (width <= 0 || height <= 0) return
+
+        // 1. Top Section
+        val topH = topSection.measuredHeight
+        topSection.layout(0, safeAreaTopInset, width, safeAreaTopInset + topH)
+
+        // 2. Bottom Section
+        val bottomH = bottomSection.measuredHeight
+        bottomSection.layout(0, height - safeAreaBottomInset - bottomH, width, height - safeAreaBottomInset)
+
+        // 3. Center Section & Buffering Spinner centered within safe viewing area
+        val availHeight = (height - safeAreaTopInset - safeAreaBottomInset).coerceAtLeast(0)
+        val centerY = safeAreaTopInset + availHeight / 2
+
+        val centerH = centerSection.measuredHeight
+        val centerTop = centerY - centerH / 2
+        centerSection.layout(0, centerTop, width, centerTop + centerH)
+
+        val spinnerW = bufferingSpinner.measuredWidth
+        val spinnerH = bufferingSpinner.measuredHeight
+        val spinnerLeft = (width - spinnerW) / 2
+        val spinnerTop = centerY - spinnerH / 2
+        bufferingSpinner.layout(spinnerLeft, spinnerTop, spinnerLeft + spinnerW, spinnerTop + spinnerH)
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         val width = right - left
         val height = bottom - top
+        layoutSections(width, height)
+    }
 
-        val topH = topSection.measuredHeight
-        topSection.layout(0, safeAreaTopInset, width, safeAreaTopInset + topH)
-
-        val bottomH = bottomSection.measuredHeight
-        bottomSection.layout(0, height - safeAreaBottomInset - bottomH, width, height - safeAreaBottomInset)
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        player?.let { p ->
+            val current = p.currentPosition.toDouble() / 1000.0
+            val duration = p.duration.coerceAtLeast(0L).toDouble() / 1000.0
+            val buffered = p.bufferedPosition.coerceAtLeast(0L).toDouble() / 1000.0
+            coordinator?.notifyEngineTime(current)
+            bottomSection.updateTime(current, duration)
+            if (duration > 0.0) {
+                val pct = Math.min(100.0, (buffered / duration) * 100.0)
+                bottomSection.updateBuffer(buffered, pct)
+            }
+        }
+        if (player?.isPlaying == true || isPlaying) {
+            this.isPlaying = true
+            centerSection.setPlaying(true, isEnded = false)
+            startTimeUpdates()
+            resetAutoHideTimer()
+        }
     }
 
     override fun onDetachedFromWindow() {

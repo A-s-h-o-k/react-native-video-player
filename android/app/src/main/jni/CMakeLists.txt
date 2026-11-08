@@ -12,6 +12,16 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${PLAYER_CPP_DIR}/PlayerStateCoordinator.cpp
 )
 
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+    -Wall
+    -Wextra
+    -Wunused-parameter
+    -Wunused-variable
+    -Wunused-function
+    -ffunction-sections
+    -fdata-sections
+)
+
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${PLAYER_CPP_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}

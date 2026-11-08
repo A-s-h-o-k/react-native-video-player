@@ -131,7 +131,7 @@
       NSURL *url = [NSURL URLWithString:iconSource];
       if (url) {
         __weak typeof(self) weakSelf = self;
-        [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, __unused NSURLResponse * _Nullable response, NSError * _Nullable error) {
           if (data && !error) {
             UIImage *image = [UIImage imageWithData:data];
             if (image) {
@@ -185,7 +185,7 @@
 - (void)handleTouchUp {
   [UIView animateWithDuration:0.15 delay:0 usingSpringWithDamping:0.6 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseInOut animations:^{
     self.transform = CGAffineTransformIdentity;
-  } completion:^(BOOL finished) {
+  } completion:^(__unused BOOL finished) {
     if (self.onTap) {
       self.onTap(self);
     }
