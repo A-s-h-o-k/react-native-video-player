@@ -8,6 +8,7 @@
 #import "RCTVideoPlayer.h"
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
+#import <AVKit/AVKit.h>
 #import <React/RCTLog.h>
 
 #import <react/renderer/components/AppSpec/ComponentDescriptors.h>
@@ -24,6 +25,7 @@
 #import "Metadata/MediaMetadataResolver.h"
 #import "Subtitles/SubtitleManager.h"
 #import "Thumbnail/ThumbnailProvider.h"
+#import "MediaSession/MediaSessionManager.h"
 
 using namespace facebook::react;
 
@@ -67,8 +69,9 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
 
 #pragma mark - RCTVideoPlayer
 
-@interface RCTVideoPlayer () <RCTVideoPlayerViewProtocol, SubtitleManagerDelegate> {
+@interface RCTVideoPlayer () <RCTVideoPlayerViewProtocol, SubtitleManagerDelegate, MediaSessionManagerDelegate, AVPictureInPictureControllerDelegate> {
     std::unique_ptr<PlayerCore::PlayerStateCoordinator> _coordinator;
+    AVPictureInPictureController *_pipController;
 }
 
 @property (nonatomic, strong, nullable) AVPlayer *player;
@@ -86,6 +89,8 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
 @property (nonatomic, strong) MediaMetadataResolver *metadataResolver;
 @property (nonatomic, strong) SubtitleManager *subtitleManager;
 @property (nonatomic, strong) ThumbnailProvider *thumbnailProvider;
+@property (nonatomic, strong, nullable) MediaSessionManager *mediaSessionManager;
+@property (nonatomic, strong, nullable) id timeObserverToken;
 
 @end
 
@@ -308,6 +313,39 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
     return;
   }
 
+  // Configure audio session for background playback and movie mode
+  NSError *audioError = nil;
+  AVAudioSession *session = [AVAudioSession sharedInstance];
+  [session setCategory:AVAudioSessionCategoryPlayback
+                  mode:AVAudioSessionModeMoviePlayback
+               options:0
+                 error:&audioError];
+  if (audioError) {
+    NSLog(@"[RCTVideoPlayer] Audio session category error: %@", audioError);
+  }
+  audioError = nil;
+  [session setActive:YES error:&audioError];
+  if (audioError) {
+    NSLog(@"[RCTVideoPlayer] Audio session activation error: %@", audioError);
+  }
+
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:AVAudioSessionInterruptionNotification
+                                                object:nil];
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:AVAudioSessionRouteChangeNotification
+                                                object:nil];
+
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(handleAudioInterruption:)
+                                               name:AVAudioSessionInterruptionNotification
+                                             object:nil];
+
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(handleAudioRouteChange:)
+                                               name:AVAudioSessionRouteChangeNotification
+                                             object:nil];
+
   // 1. Recreate Coordinator & Engine Adapter
   _coordinator = std::make_unique<PlayerCore::PlayerStateCoordinator>();
   self.adapter = [[AVPlayerAdapter alloc] initWithCoordinator:_coordinator.get()];
@@ -329,7 +367,13 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
   self.playerLayer.frame = self.bounds;
   [self.layer addSublayer:self.playerLayer];
 
-  // 3. Control Overlay Layer
+  // 3. Picture in Picture Controller Setup
+  if ([AVPictureInPictureController isPictureInPictureSupported]) {
+    _pipController = [[AVPictureInPictureController alloc] initWithPlayerLayer:self.playerLayer];
+    _pipController.delegate = self;
+  }
+
+  // 4. Control Overlay Layer
   self.controlsLayer = [[ControlLayer alloc] initWithFrame:self.bounds];
   [self.controlsLayer setCoordinator:_coordinator.get()];
   [self.controlsLayer setVideoPlayer:self.player];
@@ -339,7 +383,29 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
 
   [self updateControlsConstraints];
 
+  // 5. MediaSession / NowPlaying & Remote Commands Setup
+  self.mediaSessionManager = [[MediaSessionManager alloc] init];
+  self.mediaSessionManager.delegate = self;
+  NSTimeInterval skipInterval = props.skipInterval > 0 ? props.skipInterval : 15.0;
+  [self.mediaSessionManager setupRemoteCommandsWithSkipInterval:skipInterval];
+
   __weak RCTVideoPlayer *weakSelf = self;
+  CMTime periodicInterval = CMTimeMake(1, 1);
+  self.timeObserverToken = [self.player addPeriodicTimeObserverForInterval:periodicInterval
+                                                                     queue:dispatch_get_main_queue()
+                                                                usingBlock:^(CMTime time) {
+    RCTVideoPlayer *strongSelf = weakSelf;
+    if (!strongSelf || !strongSelf.player) return;
+    NSTimeInterval currentTime = CMTimeGetSeconds(time);
+    NSTimeInterval duration = CMTimeGetSeconds(strongSelf.player.currentItem.duration);
+    float rate = strongSelf.player.rate;
+    NSString *title = strongSelf.controlsLayer.title ?: @"";
+    [strongSelf.mediaSessionManager updateNowPlayingInfoWithTitle:title
+                                                     currentTime:currentTime
+                                                        duration:isnan(duration) ? 0 : duration
+                                                    playbackRate:rate];
+  }];
+
   self.controlsLayer.onFullscreenToggleRequested = ^(BOOL isFullscreen) {
     [weakSelf setFullscreenMode:isFullscreen notifyJS:YES];
   };
@@ -359,6 +425,11 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
                                                                                         url:url];
     dispatch_async(dispatch_get_main_queue(), ^{
       [strongSelf.controlsLayer setTitle:resolvedInfo.title];
+      NSTimeInterval duration = CMTimeGetSeconds(item.duration);
+      [strongSelf.mediaSessionManager updateNowPlayingInfoWithTitle:resolvedInfo.title
+                                                       currentTime:CMTimeGetSeconds(strongSelf.player.currentTime)
+                                                          duration:isnan(duration) ? 0 : duration
+                                                      playbackRate:strongSelf.player.rate];
     });
   };
   [self.controlsLayer setFullscreen:props.fullscreen];
@@ -613,6 +684,31 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
     self.isFullscreenTransitioning = NO;
   }
 
+  // Remove audio session observers
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:AVAudioSessionInterruptionNotification
+                                                object:nil];
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:AVAudioSessionRouteChangeNotification
+                                                object:nil];
+
+  // Clean up PiP controller
+  if (_pipController) {
+    _pipController.delegate = nil;
+    _pipController = nil;
+  }
+
+  // Clean up time observer and MediaSession
+  if (self.timeObserverToken && self.player) {
+    [self.player removeTimeObserver:self.timeObserverToken];
+    self.timeObserverToken = nil;
+  }
+
+  if (self.mediaSessionManager) {
+    [self.mediaSessionManager cleanup];
+    self.mediaSessionManager = nil;
+  }
+
   if (self.adapter) {
     [self.adapter cleanup];
     self.adapter = nil;
@@ -637,6 +733,91 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
   [self.thumbnailProvider clearCache];
   [self.subtitleManager attachPlayerItem:nil];
   _coordinator = nullptr;
+}
+
+#pragma mark - Audio Session Notifications
+
+- (void)handleAudioInterruption:(NSNotification *)notification {
+  NSDictionary *userInfo = notification.userInfo;
+  AVAudioSessionInterruptionType interruptionType = (AVAudioSessionInterruptionType)[userInfo[AVAudioSessionInterruptionTypeKey] unsignedIntegerValue];
+  if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
+    if (_coordinator) {
+      _coordinator->requestPause();
+    }
+  } else if (interruptionType == AVAudioSessionInterruptionTypeEnded) {
+    AVAudioSessionInterruptionOptions options = (AVAudioSessionInterruptionOptions)[userInfo[AVAudioSessionInterruptionOptionKey] unsignedIntegerValue];
+    if (options & AVAudioSessionInterruptionOptionShouldResume) {
+      if (_coordinator) {
+        _coordinator->requestPlay();
+      }
+    }
+  }
+}
+
+- (void)handleAudioRouteChange:(NSNotification *)notification {
+  NSDictionary *userInfo = notification.userInfo;
+  AVAudioSessionRouteChangeReason reason = (AVAudioSessionRouteChangeReason)[userInfo[AVAudioSessionRouteChangeReasonKey] unsignedIntegerValue];
+  if (reason == AVAudioSessionRouteChangeReasonOldDeviceUnavailable) {
+    if (_coordinator) {
+      _coordinator->requestPause();
+    }
+  }
+}
+
+#pragma mark - MediaSessionManagerDelegate
+
+- (void)mediaSessionDidRequestPlay {
+  if (_coordinator) {
+    _coordinator->requestPlay();
+  }
+}
+
+- (void)mediaSessionDidRequestPause {
+  if (_coordinator) {
+    _coordinator->requestPause();
+  }
+}
+
+- (void)mediaSessionDidRequestSeekTo:(NSTimeInterval)time {
+  if (_coordinator) {
+    _coordinator->requestSeek(time);
+  }
+}
+
+- (void)mediaSessionDidRequestSkipForward:(NSTimeInterval)interval {
+  if (_coordinator) {
+    PlayerCore::PlayerSnapshot snapshot = _coordinator->getSnapshot();
+    _coordinator->requestSeek(snapshot.currentTime + interval);
+  }
+}
+
+- (void)mediaSessionDidRequestSkipBackward:(NSTimeInterval)interval {
+  if (_coordinator) {
+    PlayerCore::PlayerSnapshot snapshot = _coordinator->getSnapshot();
+    _coordinator->requestSeek(std::max(0.0, snapshot.currentTime - interval));
+  }
+}
+
+#pragma mark - AVPictureInPictureControllerDelegate
+
+- (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
+  if (self.controlsLayer) {
+    [self.controlsLayer hideControlsAnimated:NO];
+    [self.controlsLayer setControlsAllowed:NO];
+  }
+}
+
+- (void)pictureInPictureControllerDidStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
+  if (self.controlsLayer) {
+    const auto &currentProps = *std::static_pointer_cast<VideoPlayerProps const>(_props);
+    [self.controlsLayer setControlsAllowed:currentProps.controls];
+    [self.controlsLayer showControlsAnimated:YES];
+  }
+}
+
+- (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController
+restoreUserInterfaceForPictureInPictureStopWithCompletionHandler:(void (^)(BOOL restored))completionHandler {
+  completionHandler(YES);
 }
 
 #pragma mark - SubtitleManagerDelegate

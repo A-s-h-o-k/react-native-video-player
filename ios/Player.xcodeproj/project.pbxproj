@@ -23,6 +23,7 @@
 		25B000042EFF400000A1B2C3 /* MediaMetadataResolver.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25B000032EFF400000A1B2C3 /* MediaMetadataResolver.mm */; };
 		25B000082EFF400000A1B2C3 /* SubtitleManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25B000072EFF400000A1B2C3 /* SubtitleManager.mm */; };
 		25B0000C2EFF400000A1B2C3 /* ThumbnailProvider.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25B0000B2EFF400000A1B2C3 /* ThumbnailProvider.mm */; };
+		25C000022EFF500000A1B2C3 /* MediaSessionManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = 25C000012EFF500000A1B2C3 /* MediaSessionManager.mm */; };
 		6A4A24E34DE2DB930945705E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -60,6 +61,8 @@
 		25B000072EFF400000A1B2C3 /* SubtitleManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = SubtitleManager.mm; path = SubtitleManager.mm; sourceTree = "<group>"; };
 		25B0000A2EFF400000A1B2C3 /* ThumbnailProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ThumbnailProvider.h; path = ThumbnailProvider.h; sourceTree = "<group>"; };
 		25B0000B2EFF400000A1B2C3 /* ThumbnailProvider.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = ThumbnailProvider.mm; path = ThumbnailProvider.mm; sourceTree = "<group>"; };
+		25C000002EFF500000A1B2C3 /* MediaSessionManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MediaSessionManager.h; path = MediaSessionManager.h; sourceTree = "<group>"; };
+		25C000012EFF500000A1B2C3 /* MediaSessionManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = MediaSessionManager.mm; path = MediaSessionManager.mm; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Player/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Player/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		87D197E4775130520D13CC75 /* libPods-Player.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Player.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -167,6 +170,7 @@
 				25B000012EFF400000A1B2C3 /* Metadata */,
 				25B000052EFF400000A1B2C3 /* Subtitles */,
 				25B000092EFF400000A1B2C3 /* Thumbnail */,
+				25C000032EFF500000A1B2C3 /* MediaSession */,
 				255776A52F12764A00D9DD18 /* Common */,
 				25483ECB2EFD413900104BC5 /* Layers */,
 				2584BB2E2EF1D05A00C473C8 /* RCTVideoPlayer.mm */,
@@ -210,6 +214,15 @@
 				25B0000B2EFF400000A1B2C3 /* ThumbnailProvider.mm */,
 			);
 			path = Thumbnail;
+			sourceTree = "<group>";
+		};
+		25C000032EFF500000A1B2C3 /* MediaSession */ = {
+			isa = PBXGroup;
+			children = (
+				25C000002EFF500000A1B2C3 /* MediaSessionManager.h */,
+				25C000012EFF500000A1B2C3 /* MediaSessionManager.mm */,
+			);
+			path = MediaSession;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
@@ -442,6 +455,7 @@
 				25B000042EFF400000A1B2C3 /* MediaMetadataResolver.mm in Sources */,
 				25B000082EFF400000A1B2C3 /* SubtitleManager.mm in Sources */,
 				25B0000C2EFF400000A1B2C3 /* ThumbnailProvider.mm in Sources */,
+				25C000022EFF500000A1B2C3 /* MediaSessionManager.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

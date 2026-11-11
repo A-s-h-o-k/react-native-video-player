@@ -177,17 +177,25 @@
 #pragma mark - Micro-Interaction Animations
 
 - (void)handleTouchDown {
+  __weak typeof(self) weakSelf = self;
   [UIView animateWithDuration:0.1 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-    self.transform = CGAffineTransformMakeScale(0.92, 0.92);
+    __strong typeof(weakSelf) strongSelf = weakSelf;
+    if (!strongSelf) return;
+    strongSelf.transform = CGAffineTransformMakeScale(0.92, 0.92);
   } completion:nil];
 }
 
 - (void)handleTouchUp {
+  __weak typeof(self) weakSelf = self;
   [UIView animateWithDuration:0.15 delay:0 usingSpringWithDamping:0.6 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-    self.transform = CGAffineTransformIdentity;
+    __strong typeof(weakSelf) strongSelf = weakSelf;
+    if (!strongSelf) return;
+    strongSelf.transform = CGAffineTransformIdentity;
   } completion:^(__unused BOOL finished) {
-    if (self.onTap) {
-      self.onTap(self);
+    __strong typeof(weakSelf) strongSelf = weakSelf;
+    if (!strongSelf) return;
+    if (strongSelf.onTap) {
+      strongSelf.onTap(strongSelf);
     }
   }];
 }
@@ -200,14 +208,17 @@
 }
 
 - (void)didUpdateFocusInContext:(UIFocusUpdateContext *)context withAnimationCoordinator:(UIFocusAnimationCoordinator *)coordinator {
+  __weak typeof(self) weakSelf = self;
   [coordinator addCoordinatedAnimations:^{
-    if (self.isFocused) {
-      self.transform = CGAffineTransformMakeScale(1.15, 1.15);
-      self.layer.borderWidth = 2.0;
-      self.layer.borderColor = UIColor.whiteColor.CGColor;
+    __strong typeof(weakSelf) strongSelf = weakSelf;
+    if (!strongSelf) return;
+    if (strongSelf.isFocused) {
+      strongSelf.transform = CGAffineTransformMakeScale(1.15, 1.15);
+      strongSelf.layer.borderWidth = 2.0;
+      strongSelf.layer.borderColor = UIColor.whiteColor.CGColor;
     } else {
-      self.transform = CGAffineTransformIdentity;
-      self.layer.borderWidth = 0.0;
+      strongSelf.transform = CGAffineTransformIdentity;
+      strongSelf.layer.borderWidth = 0.0;
     }
   } completion:nil];
 }
