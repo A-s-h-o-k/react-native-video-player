@@ -1,10 +1,9 @@
 import type {
-  CodegenTypes,
   HostComponent,
   ViewProps,
 } from 'react-native';
 import {codegenNativeComponent} from 'react-native';
-import {
+import type {
   BubblingEventHandler,
   Double,
   Int32,
@@ -46,14 +45,14 @@ type BufferEvent = Readonly<{
 export interface NativeProps extends ViewProps {
   videoUrl: string;
   title?: string;
-  onScriptLoaded?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
+  onScriptLoaded?: BubblingEventHandler<VideoPlayer> | null;
   seekTo?: Int32;
   play: boolean;
-  onScriptLoading?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
-  onScriptError?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
-  onError?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
-  onPlay?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
-  onPause?: CodegenTypes.BubblingEventHandler<VideoPlayer> | null;
+  onScriptLoading?: BubblingEventHandler<VideoPlayer> | null;
+  onScriptError?: BubblingEventHandler<VideoPlayer> | null;
+  onError?: BubblingEventHandler<VideoPlayer> | null;
+  onPlay?: BubblingEventHandler<VideoPlayer> | null;
+  onPause?: BubblingEventHandler<VideoPlayer> | null;
   iconSize?: Int32;
   headers?: string;
   drm?: string;
@@ -71,7 +70,7 @@ export interface NativeProps extends ViewProps {
   showPlayPauseButton?: WithDefault<boolean, true>;
   autoHideTimeout?: WithDefault<Int32, 5000>;
   controls?: WithDefault<boolean, true>;
-  onFullscreenChange?: CodegenTypes.BubblingEventHandler<FullscreenChangeEvent> | null;
+  onFullscreenChange?: BubblingEventHandler<FullscreenChangeEvent> | null;
   onProgress?: BubblingEventHandler<ProgressEvent>;
   onLoad?: BubblingEventHandler<LoadEvent>;
   onVideoError?: BubblingEventHandler<ErrorEvent>;
