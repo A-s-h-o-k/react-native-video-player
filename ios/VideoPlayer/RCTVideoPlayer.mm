@@ -778,6 +778,12 @@ static UIInterfaceOrientationMask sSupportedOrientationMask = UIInterfaceOrienta
   }
 }
 
+- (void)mediaSessionDidRequestTogglePlayPause {
+  if (_coordinator) {
+    _coordinator->requestTogglePlayPause();
+  }
+}
+
 - (void)mediaSessionDidRequestSeekTo:(NSTimeInterval)time {
   if (_coordinator) {
     _coordinator->requestSeek(time);

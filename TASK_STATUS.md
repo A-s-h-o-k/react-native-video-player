@@ -14,12 +14,12 @@
 
 | Field | Current Details |
 | :--- | :--- |
-| **Current Task** | Enterprise Full-Stack Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection |
+| **Current Task** | iOS & tvOS Native Video Player Subsystem Bug Fixes (AVAudioSession, MediaSession, PiP, Retain Cycles, DRM HTTPS & Dead Code Elimination) |
 | **Current Status** | `[COMPLETED]` |
-| **Primary Platforms** | Cross-Platform (JS/TS, Android Kotlin/Java, iOS Swift/Obj-C++, Shared C++) |
-| **Target Files** | • `.eslintignore`<br>• `.eslintrc.js`<br>• `tsconfig.json`<br>• `package.json`<br>• `knip.json`<br>• `App.tsx`<br>• `src/index.tsx`<br>• `android/build.gradle`<br>• `android/app/build.gradle`<br>• `android/detekt.yml`<br>• `android/app/proguard-rules.pro`<br>• `android/app/src/main/jni/CMakeLists.txt`<br>• `.swiftlint.yml`<br>• `ios/Player.xcodeproj/project.pbxproj`<br>• `.clang-tidy` |
-| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md)<br>• [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) |
-| **Acceptance Criteria** | 1. Add `.eslintignore` and configure ESLint with prop/method unused rules.<br>2. Enable TypeScript strict unused flags (`noUnusedLocals`, `noUnusedParameters`).<br>3. Add `knip` for full-project dead code, uncalled methods, and unused export detection.<br>4. Configure Detekt and Android Lint in Android Gradle with strict rules for unused code.<br>5. Add `.swiftlint.yml` and enable Xcode compiler flags (`GCC_WARN_UNUSED_PARAMETER`, `DEAD_CODE_STRIPPING`).<br>6. Add `.clang-tidy` and strict warning flags in CMakeLists.txt for shared C++.<br>7. Clean any existing lint/unused errors and verify all quality checks pass cleanly. |
+| **Primary Platforms** | iOS / tvOS (Objective-C, Objective-C++, Swift, AVKit, MediaPlayer) |
+| **Target Files** | • `ios/VideoPlayer/RCTVideoPlayer.mm`<br>• `ios/VideoPlayer/MediaSession/MediaSessionManager.h`<br>• `ios/VideoPlayer/MediaSession/MediaSessionManager.mm`<br>• `ios/VideoPlayer/Common/CommonButton.m`<br>• `ios/VideoPlayer/Network/NetworkAuthManager.h`<br>• `ios/VideoPlayer/Network/NetworkAuthManager.mm`<br>• `ios/VideoPlayer/EventManager/EventManager.hpp`<br>• `ios/VideoPlayer/EventManager/EventManager.cpp`<br>• `ios/Player.xcodeproj/project.pbxproj` |
+| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) |
+| **Acceptance Criteria** | 1. Configure AVAudioSession for playback and movie playback with interruption and route change handling in RCTVideoPlayer.mm.<br>2. Implement MediaSessionManager for MPRemoteCommandCenter and MPNowPlayingInfoCenter integration.<br>3. Add basic Picture-in-Picture (PiP) support with AVPictureInPictureController and delegate.<br>4. Fix retain cycles in CommonButton.m touch and focus animation blocks using weak/strong self.<br>5. Replace blocking dataWithContentsOfURL with dedicated NSURLSession and custom drmHeaders in NetworkAuthManager.<br>6. Create dedicated drmSession with TLS server trust evaluation via SecTrustEvaluateWithError.<br>7. Remove dead EventManager files and clean up Xcode project. |
 
 ---
 
@@ -170,4 +170,4 @@ When a task in a specific subsystem is modified, the agent must update the follo
 
 ---
 
-*Last Updated: 2026-11-08 (Enterprise Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection Subsystem Completed & Synchronized)*
+*Last Updated: 2026-11-11 (iOS & tvOS Native Video Player Subsystem Bug Fixes Completed & Synchronized)*

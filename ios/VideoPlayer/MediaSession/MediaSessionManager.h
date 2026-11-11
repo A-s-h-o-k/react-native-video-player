@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol MediaSessionManagerDelegate <NSObject>
 - (void)mediaSessionDidRequestPlay;
 - (void)mediaSessionDidRequestPause;
+- (void)mediaSessionDidRequestTogglePlayPause;
 - (void)mediaSessionDidRequestSeekTo:(NSTimeInterval)time;
 - (void)mediaSessionDidRequestSkipForward:(NSTimeInterval)interval;
 - (void)mediaSessionDidRequestSkipBackward:(NSTimeInterval)interval;

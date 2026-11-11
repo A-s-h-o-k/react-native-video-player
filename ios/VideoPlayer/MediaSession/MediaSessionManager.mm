@@ -82,8 +82,8 @@
 }
 
 - (MPRemoteCommandHandlerStatus)handleTogglePlayPauseCommand:(MPRemoteCommandEvent *)event {
-  if ([self.delegate respondsToSelector:@selector(mediaSessionDidRequestPause)]) {
-    [self.delegate mediaSessionDidRequestPause];
+  if ([self.delegate respondsToSelector:@selector(mediaSessionDidRequestTogglePlayPause)]) {
+    [self.delegate mediaSessionDidRequestTogglePlayPause];
     return MPRemoteCommandHandlerStatusSuccess;
   }
   return MPRemoteCommandHandlerStatusCommandFailed;
