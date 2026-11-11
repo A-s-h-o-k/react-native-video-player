@@ -1,5 +1,11 @@
 package com.player.network
 
+/**
+ * TODO: Wire this authenticator into an OkHttpDataSource.Factory
+ * when OkHttp dependency is added. Currently dead code.
+ * Requires: implementation "com.squareup.okhttp3:okhttp:4.12.0"
+ */
+/*
 import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
@@ -42,3 +48,4 @@ class TokenRefreshAuthenticator(
         return count
     }
 }
+*/

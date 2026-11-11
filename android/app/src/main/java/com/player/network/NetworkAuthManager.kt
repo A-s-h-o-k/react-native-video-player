@@ -63,6 +63,10 @@ class NetworkAuthManager {
             return null
         }
 
+        require(config.licenseServerUrl.startsWith("https://")) {
+            "DRM license server URL must use HTTPS: ${config.licenseServerUrl}"
+        }
+
         val httpDrmFactory = DefaultHttpDataSource.Factory()
         if (config.headers.isNotEmpty()) {
             httpDrmFactory.setDefaultRequestProperties(config.headers)

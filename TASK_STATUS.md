@@ -14,12 +14,12 @@
 
 | Field | Current Details |
 | :--- | :--- |
-| **Current Task** | Enterprise Full-Stack Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection |
+| **Current Task** | Android JNI & Native Player Stability, Memory Safety & Security Hardening |
 | **Current Status** | `[COMPLETED]` |
-| **Primary Platforms** | Cross-Platform (JS/TS, Android Kotlin/Java, iOS Swift/Obj-C++, Shared C++) |
-| **Target Files** | • `.eslintignore`<br>• `.eslintrc.js`<br>• `tsconfig.json`<br>• `package.json`<br>• `knip.json`<br>• `App.tsx`<br>• `src/index.tsx`<br>• `android/build.gradle`<br>• `android/app/build.gradle`<br>• `android/detekt.yml`<br>• `android/app/proguard-rules.pro`<br>• `android/app/src/main/jni/CMakeLists.txt`<br>• `.swiftlint.yml`<br>• `ios/Player.xcodeproj/project.pbxproj`<br>• `.clang-tidy` |
-| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md)<br>• [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) |
-| **Acceptance Criteria** | 1. Add `.eslintignore` and configure ESLint with prop/method unused rules.<br>2. Enable TypeScript strict unused flags (`noUnusedLocals`, `noUnusedParameters`).<br>3. Add `knip` for full-project dead code, uncalled methods, and unused export detection.<br>4. Configure Detekt and Android Lint in Android Gradle with strict rules for unused code.<br>5. Add `.swiftlint.yml` and enable Xcode compiler flags (`GCC_WARN_UNUSED_PARAMETER`, `DEAD_CODE_STRIPPING`).<br>6. Add `.clang-tidy` and strict warning flags in CMakeLists.txt for shared C++.<br>7. Clean any existing lint/unused errors and verify all quality checks pass cleanly. |
+| **Primary Platforms** | Android / Android TV (Kotlin, JNI / C++) |
+| **Target Files** | • `android/app/src/main/java/com/player/videoplayer/BasePlayer.kt`<br>• `android/app/build.gradle`<br>• `android/app/src/main/jni/PlayerStateCoordinatorJni.cpp`<br>• `android/app/src/main/java/com/player/network/TokenRefreshAuthenticator.kt`<br>• `android/app/src/main/java/com/player/network/NetworkAuthManager.kt`<br>• `TASK_STATUS.md` |
+| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [core_player_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/core_player_arch.md)<br>• [network_auth_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/network_auth_arch.md) |
+| **Acceptance Criteria** | 1. Fix BasePlayer listener memory leak with stored listener references, stop/clearMediaItems, and cleanup unregistration.<br>2. Remove insecure debug signing from release build type in build.gradle.<br>3. Add JNI ExceptionCheck/Describe/Clear after CallVoidMethod and nullptr check on NewStringUTF, delete local refs for jclass.<br>4. Implement thread-local RAII JNIThreadDetacher in PlayerStateCoordinatorJni getEnv().<br>5. Comment out dead code in TokenRefreshAuthenticator with TODO note.<br>6. Add OkHttp and Media3 OkHttp datasource dependencies, add HTTPS validation for DRM license server URLs. |
 
 ---
 
@@ -170,4 +170,4 @@ When a task in a specific subsystem is modified, the agent must update the follo
 
 ---
 
-*Last Updated: 2026-11-08 (Enterprise Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection Subsystem Completed & Synchronized)*
+*Last Updated: 2026-11-11 (Android JNI & Native Player Stability, Memory Safety & Security Hardening Completed & Synchronized)*
