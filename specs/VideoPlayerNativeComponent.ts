@@ -2,7 +2,7 @@ import type {
   HostComponent,
   ViewProps,
 } from 'react-native';
-import {codegenNativeComponent} from 'react-native';
+import { codegenNativeComponent } from 'react-native';
 import type {
   BubblingEventHandler,
   Double,

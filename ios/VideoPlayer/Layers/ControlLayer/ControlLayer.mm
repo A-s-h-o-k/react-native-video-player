@@ -91,6 +91,7 @@ static UIColor *ColorFromHexString(NSString *hexString) {
     NSInteger _autoHideTimeoutMs;
     BOOL _controlsAllowed;
     BOOL _controlsVisible;
+    NSString *_title;
 }
 @property (nonatomic, strong, nullable) NSTimer *autoHideTimer;
 @property (nonatomic, assign, readwrite) BOOL isFullscreen;
@@ -387,7 +388,12 @@ static UIColor *ColorFromHexString(NSString *hexString) {
 }
 
 - (void)setTitle:(NSString *)title {
+  _title = [title copy];
   [self.topControlView setTitle:title];
+}
+
+- (nullable NSString *)title {
+  return _title ?: self.topControlView.titleLabel.text;
 }
 
 - (void)setCaptionsVisible:(BOOL)visible {

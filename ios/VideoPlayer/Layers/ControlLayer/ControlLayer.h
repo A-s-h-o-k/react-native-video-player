@@ -44,7 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
 #endif
 
 - (void)setVideoPlayer:(AVPlayer *)player;
-- (void)setTitle:(nullable NSString *)title;
+@property (nonatomic, copy, nullable) NSString *title;
 - (void)setCaptionsVisible:(BOOL)visible;
 - (void)setCaptionsActive:(BOOL)active;
 - (void)setFullscreen:(BOOL)isFullscreen;
