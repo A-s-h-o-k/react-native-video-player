@@ -14,12 +14,12 @@
 
 | Field | Current Details |
 | :--- | :--- |
-| **Current Task** | Enterprise Full-Stack Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection |
+| **Current Task** | Android Platform Features: AudioFocus, MediaSession, Accessibility & Fullscreen Position Persistence |
 | **Current Status** | `[COMPLETED]` |
-| **Primary Platforms** | Cross-Platform (JS/TS, Android Kotlin/Java, iOS Swift/Obj-C++, Shared C++) |
-| **Target Files** | • `.eslintignore`<br>• `.eslintrc.js`<br>• `tsconfig.json`<br>• `package.json`<br>• `knip.json`<br>• `App.tsx`<br>• `src/index.tsx`<br>• `android/build.gradle`<br>• `android/app/build.gradle`<br>• `android/detekt.yml`<br>• `android/app/proguard-rules.pro`<br>• `android/app/src/main/jni/CMakeLists.txt`<br>• `.swiftlint.yml`<br>• `ios/Player.xcodeproj/project.pbxproj`<br>• `.clang-tidy` |
-| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md)<br>• [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) |
-| **Acceptance Criteria** | 1. Add `.eslintignore` and configure ESLint with prop/method unused rules.<br>2. Enable TypeScript strict unused flags (`noUnusedLocals`, `noUnusedParameters`).<br>3. Add `knip` for full-project dead code, uncalled methods, and unused export detection.<br>4. Configure Detekt and Android Lint in Android Gradle with strict rules for unused code.<br>5. Add `.swiftlint.yml` and enable Xcode compiler flags (`GCC_WARN_UNUSED_PARAMETER`, `DEAD_CODE_STRIPPING`).<br>6. Add `.clang-tidy` and strict warning flags in CMakeLists.txt for shared C++.<br>7. Clean any existing lint/unused errors and verify all quality checks pass cleanly. |
+| **Primary Platforms** | Android (Kotlin) / Android TV |
+| **Target Files** | • `android/app/src/main/java/com/player/audio/AudioFocusManager.kt`<br>• `android/app/src/main/java/com/player/media/MediaSessionManager.kt`<br>• `android/app/src/main/java/com/player/network/NetworkAuthManager.kt`<br>• `android/app/src/main/java/com/player/ReactVideoPlayer.kt`<br>• `android/app/src/main/java/com/player/ReactVideoPlayerManager.kt`<br>• `android/app/src/main/java/com/player/ui/ControlLayer.kt`<br>• `android/app/src/main/java/com/player/ui/sections/BottomSection.kt`<br>• `android/app/src/main/AndroidManifest.xml` |
+| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) |
+| **Acceptance Criteria** | 1. Implement AudioFocusManager with headphone noisy broadcast receiver and ducking.<br>2. Integrate AudioFocusManager into ReactVideoPlayer.<br>3. Enforce HTTPS check on DRM license server URL in NetworkAuthManager.<br>4. Save and restore playback position during fullscreen transitions, and make cleanUp idempotent.<br>5. Add accessibility announcements for Playing/Paused/Buffering/Ended states in ControlLayer.<br>6. Add Leanback launcher category, banner, and software/hardware feature flags in AndroidManifest.xml.<br>7. Emit onError, onProgress, and onLoad events from ReactVideoPlayer to React Native.<br>8. Add time-based AccessibilityDelegate to SeekBar in BottomSection.<br>9. Implement MediaSessionManager with playback state, metadata, and hardware media button controls. |
 
 ---
 
@@ -109,7 +109,7 @@
 | :--- | :--- | :--- | :--- |
 | **Analytics & Plugin Subsystem** | [src/analytics/](file:///Users/ashokammineni/video-player/new_2/Player/src/analytics), [analytics_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/analytics_arch.md) | `[PLANNED]` | Vendor-agnostic plugin architecture (`VideoPlayerAnalyticsPlugin`, `BaseAnalyticsPlugin`), `AnalyticsCoordinator`, standardized CTA-2066 QoE/QoS schemas, heartbeat dispatcher, and reference `ConsoleAnalyticsPlugin` & `HttpBeaconPlugin`. |
 | **Declarative Custom Layout Builder** | [src/dynamic/](file:///Users/ashokammineni/video-player/new_2/Player/src/dynamic), [layout_builder_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/layout_builder_arch.md) | `[PLANNED]` | 2-Pillar system: Turnkey native player vs Declarative schema builder (`LayoutNode` JSON/XML), supporting Runtime Inflater (SDUI) and Build-Time AOT Compiler (CLI). |
-| **OS Media Sessions** | iOS & Android | `[PLANNED]` | `MPRemoteCommandCenter` / `MPNowPlayingInfoCenter` & `MediaSessionCompat`. |
+| **OS Media Sessions** | iOS & Android | `[COMPLETED]` | `MPRemoteCommandCenter` / `MPNowPlayingInfoCenter` (iOS) & `MediaSessionManager` (Android). |
 | **TV D-pad 2D Focus Grid** | tvOS & Android TV | `[PLANNED]` | Full 2D focus traversal between Top, Center, and Bottom sections. |
 | **Picture-in-Picture (PiP)** | iOS & Android | `[PLANNED]` | Background playback and PiP controllers. |
 

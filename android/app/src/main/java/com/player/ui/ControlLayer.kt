@@ -165,6 +165,8 @@ class ControlLayer @JvmOverloads constructor(
     }
 
     fun setPlaying(playing: Boolean, isEnded: Boolean = false) {
+        val wasPlaying = this.isPlaying
+        val wasEnded = this.isEnded
         this.isPlaying = playing
         this.isEnded = isEnded
         centerSection.setPlaying(playing, isEnded)
@@ -175,10 +177,22 @@ class ControlLayer @JvmOverloads constructor(
             stopTimeUpdates()
             showControls(animated = true)
         }
+
+        if (isEnded) {
+            if (!wasEnded) {
+                announceForAccessibility("Ended")
+            }
+        } else if (playing != wasPlaying) {
+            announceForAccessibility(if (isPlaying) "Playing" else "Paused")
+        }
     }
 
     fun setBuffering(buffering: Boolean) {
+        val wasBuffering = bufferingSpinner.visibility == View.VISIBLE
         bufferingSpinner.visibility = if (buffering) View.VISIBLE else View.GONE
+        if (buffering && !wasBuffering) {
+            announceForAccessibility("Buffering")
+        }
     }
 
     // --- CenterSectionListener Callbacks ---

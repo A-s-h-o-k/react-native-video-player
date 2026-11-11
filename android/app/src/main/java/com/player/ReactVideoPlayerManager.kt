@@ -155,5 +155,26 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
                                 mapOf(
                                     "bubbled" to "onFullscreenChange",
                                     "captured" to "onFullscreenChangeCapture"
+                                )),
+            "onError" to
+                    mapOf(
+                        "phasedRegistrationNames" to
+                                mapOf(
+                                    "bubbled" to "onError",
+                                    "captured" to "onErrorCapture"
+                                )),
+            "onProgress" to
+                    mapOf(
+                        "phasedRegistrationNames" to
+                                mapOf(
+                                    "bubbled" to "onProgress",
+                                    "captured" to "onProgressCapture"
+                                )),
+            "onLoad" to
+                    mapOf(
+                        "phasedRegistrationNames" to
+                                mapOf(
+                                    "bubbled" to "onLoad",
+                                    "captured" to "onLoadCapture"
                                 )))
 }
