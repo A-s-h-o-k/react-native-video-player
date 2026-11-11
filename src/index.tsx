@@ -1,6 +1,5 @@
 import React, { forwardRef } from 'react';
 import {
-  Image,
   ImageSourcePropType,
   StyleSheet,
   ViewProps,
@@ -8,6 +7,9 @@ import {
 
 import VideoPlayerNativeComponent from '../specs/VideoPlayerNativeComponent';
 import defaultPlayerConfig from './default-player-config.json';
+import { parseAspectRatio, serializeIcons } from './utils';
+
+export { parseAspectRatio, serializeIcons } from './utils';
 
 export type DrmType = 'fairplay' | 'widevine' | 'clearkey';
 
@@ -84,6 +86,29 @@ export interface DrmOptions {
   multiSession?: boolean;
 }
 
+export interface VideoProgressEvent {
+  currentTime: number;
+  duration: number;
+  playableDuration: number;
+}
+
+export interface VideoLoadEvent {
+  duration: number;
+  naturalSize: {
+    width: number;
+    height: number;
+  };
+}
+
+export interface VideoErrorEvent {
+  code: number;
+  message: string;
+}
+
+export interface VideoBufferEvent {
+  isBuffering: boolean;
+}
+
 export interface VideoPlayerProps extends ViewProps {
   /** Media URL (HLS .m3u8, MP4, DASH .mpd, or local file) */
   videoUrl: string;
@@ -147,41 +172,16 @@ export interface VideoPlayerProps extends ViewProps {
   onPlay?: (event: { nativeEvent: { result: 'success' | 'error' } }) => void;
   /** Fired when playback transitions to Paused */
   onPause?: (event: { nativeEvent: { result: 'success' | 'error' } }) => void;
-}
-
-function serializeIcons(icons?: PlayerIcons): string | undefined {
-  if (!icons) return undefined;
-  const serialized: Record<string, string> = {};
-  for (const [key, val] of Object.entries(icons)) {
-    if (!val) continue;
-    if (typeof val === 'string') {
-      serialized[key] = val;
-    } else {
-      const resolved = Image.resolveAssetSource(val as ImageSourcePropType);
-      if (resolved?.uri) {
-        serialized[key] = resolved.uri;
-      }
-    }
-  }
-  return Object.keys(serialized).length > 0 ? JSON.stringify(serialized) : undefined;
-}
-
-function parseAspectRatio(ratio?: number | string): number | undefined {
-  if (typeof ratio === 'number') {
-    return ratio;
-  }
-  if (typeof ratio === 'string') {
-    if (ratio.includes(':')) {
-      const [w, h] = ratio.split(':').map(Number);
-      if (w > 0 && h > 0) return w / h;
-    } else if (ratio.includes('/')) {
-      const [w, h] = ratio.split('/').map(Number);
-      if (w > 0 && h > 0) return w / h;
-    }
-    const num = parseFloat(ratio);
-    return isNaN(num) ? undefined : num;
-  }
-  return undefined;
+  /** Fired periodically during playback with timing and buffer stats */
+  onProgress?: (event: { nativeEvent: VideoProgressEvent }) => void;
+  /** Fired when media is loaded with duration and natural video dimensions */
+  onLoad?: (event: { nativeEvent: VideoLoadEvent }) => void;
+  /** Fired on video playback error */
+  onVideoError?: (event: { nativeEvent: VideoErrorEvent }) => void;
+  /** Fired when buffering state changes */
+  onBuffer?: (event: { nativeEvent: VideoBufferEvent }) => void;
+  /** Fired when video reaches the end */
+  onEnd?: (event: { nativeEvent: null }) => void;
 }
 
 export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
@@ -192,6 +192,7 @@ export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
       play = false,
       resizeMode = 'contain',
       aspectRatio,
+      seekTo,
       headers,
       drm,
       fullscreen,
@@ -210,6 +211,11 @@ export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
       autoHideTimeout,
       controls = true,
       onFullscreenChange,
+      onProgress,
+      onLoad,
+      onVideoError,
+      onBuffer,
+      onEnd,
       style,
       ...props
     },
@@ -245,6 +251,7 @@ export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
     const serializedDrm = drm ? JSON.stringify(drm) : undefined;
     const serializedIcons = serializeIcons(mergedIcons);
     const computedAspectRatio = parseAspectRatio(aspectRatio);
+    const validatedSeekTo = seekTo != null && seekTo >= 0 ? seekTo : undefined;
 
     return (
       <VideoPlayerNativeComponent
@@ -258,6 +265,7 @@ export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
         title={title}
         play={play}
         resizeMode={resizeMode}
+        seekTo={validatedSeekTo}
         headers={serializedHeaders}
         drm={serializedDrm}
         fullscreen={fullscreen}
@@ -274,6 +282,11 @@ export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
         autoHideTimeout={resolvedAutoHideTimeout}
         controls={resolvedControls}
         onFullscreenChange={onFullscreenChange}
+        onProgress={onProgress}
+        onLoad={onLoad}
+        onVideoError={onVideoError}
+        onBuffer={onBuffer}
+        onEnd={onEnd}
         {...props}
       />
     );

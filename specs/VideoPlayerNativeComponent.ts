@@ -4,7 +4,12 @@ import type {
   ViewProps,
 } from 'react-native';
 import {codegenNativeComponent} from 'react-native';
-import { Int32, WithDefault } from 'react-native/Libraries/Types/CodegenTypes';
+import {
+  BubblingEventHandler,
+  Double,
+  Int32,
+  WithDefault,
+} from 'react-native/Libraries/Types/CodegenTypes';
 
 type VideoPlayer = {
   result: 'success' | 'error';
@@ -13,6 +18,30 @@ type VideoPlayer = {
 type FullscreenChangeEvent = {
   isFullscreen: boolean;
 };
+
+// New event types
+type ProgressEvent = Readonly<{
+  currentTime: Double;
+  duration: Double;
+  playableDuration: Double;
+}>;
+
+type LoadEvent = Readonly<{
+  duration: Double;
+  naturalSize: Readonly<{
+    width: Double;
+    height: Double;
+  }>;
+}>;
+
+type ErrorEvent = Readonly<{
+  code: Int32;
+  message: string;
+}>;
+
+type BufferEvent = Readonly<{
+  isBuffering: boolean;
+}>;
 
 export interface NativeProps extends ViewProps {
   videoUrl: string;
@@ -43,6 +72,11 @@ export interface NativeProps extends ViewProps {
   autoHideTimeout?: WithDefault<Int32, 5000>;
   controls?: WithDefault<boolean, true>;
   onFullscreenChange?: CodegenTypes.BubblingEventHandler<FullscreenChangeEvent> | null;
+  onProgress?: BubblingEventHandler<ProgressEvent>;
+  onLoad?: BubblingEventHandler<LoadEvent>;
+  onVideoError?: BubblingEventHandler<ErrorEvent>;
+  onBuffer?: BubblingEventHandler<BufferEvent>;
+  onEnd?: BubblingEventHandler<null>;
 }
 
 export default codegenNativeComponent<NativeProps>(
