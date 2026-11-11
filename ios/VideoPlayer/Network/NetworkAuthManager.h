@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)networkAuthManagerDidRefreshAuthToken:(NSString *)newToken;
 @end
 
-@interface NetworkAuthManager : NSObject <AVContentKeySessionDelegate, AVAssetResourceLoaderDelegate>
+@interface NetworkAuthManager : NSObject <AVContentKeySessionDelegate, AVAssetResourceLoaderDelegate, NSURLSessionDelegate>
 
 @property (nonatomic, weak, nullable) id<NetworkAuthManagerDelegate> delegate;
 
@@ -25,6 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) NSString *drmLicenseServerUrl;
 @property (nonatomic, copy, nullable) NSString *drmCertificateUrl;
 @property (nonatomic, copy, nullable) NSDictionary<NSString *, NSString *> *drmHeaders;
+@property (nonatomic, strong, readonly, nullable) NSURLSession *drmSession;
 
 - (instancetype)init;
 
