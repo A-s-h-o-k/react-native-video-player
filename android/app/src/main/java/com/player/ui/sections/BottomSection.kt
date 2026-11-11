@@ -10,6 +10,9 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.core.view.AccessibilityDelegateCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.player.ui.common.CommonButton
 import com.player.ui.common.CommonButtonSize
 import com.player.ui.common.CommonButtonStyle
@@ -85,6 +88,17 @@ class BottomSection @JvmOverloads constructor(
                     isScrubbing = false
                     val seconds = (sb?.progress ?: 0).toDouble() / 1000.0
                     listener?.onScrubEnded(seconds)
+                }
+            })
+
+            ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
+                override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfoCompat) {
+                    super.onInitializeAccessibilityNodeInfo(host, info)
+                    val currentSeconds = progress / 1000.0
+                    val totalSeconds = max / 1000.0
+                    val desc = "${formatAccessibilityTime(currentSeconds)} of ${formatAccessibilityTime(totalSeconds)}"
+                    info.text = desc
+                    info.contentDescription = desc
                 }
             })
         }
@@ -206,7 +220,25 @@ class BottomSection @JvmOverloads constructor(
         }
     }
 
-    private fun formatTime(totalSeconds: Double): String {
+    fun formatAccessibilityTime(totalSeconds: Double): String {
+        if (totalSeconds.isNaN() || totalSeconds < 0.0) {
+            return "0 minutes 0 seconds"
+        }
+        val total = Math.round(totalSeconds).toInt()
+        val hours = total / 3600
+        val minutes = (total % 3600) / 60
+        val seconds = total % 60
+        return if (hours > 0) {
+            "$hours hours $minutes minutes $seconds seconds"
+        } else {
+            "$minutes minutes $seconds seconds"
+        }
+    }
+
+    fun formatTime(totalSeconds: Double, isAccessibility: Boolean = false): String {
+        if (isAccessibility) {
+            return formatAccessibilityTime(totalSeconds)
+        }
         if (totalSeconds.isNaN() || totalSeconds < 0.0) {
             return "00:00"
         }

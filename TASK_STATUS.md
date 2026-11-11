@@ -109,7 +109,7 @@
 | :--- | :--- | :--- | :--- |
 | **Analytics & Plugin Subsystem** | [src/analytics/](file:///Users/ashokammineni/video-player/new_2/Player/src/analytics), [analytics_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/analytics_arch.md) | `[PLANNED]` | Vendor-agnostic plugin architecture (`VideoPlayerAnalyticsPlugin`, `BaseAnalyticsPlugin`), `AnalyticsCoordinator`, standardized CTA-2066 QoE/QoS schemas, heartbeat dispatcher, and reference `ConsoleAnalyticsPlugin` & `HttpBeaconPlugin`. |
 | **Declarative Custom Layout Builder** | [src/dynamic/](file:///Users/ashokammineni/video-player/new_2/Player/src/dynamic), [layout_builder_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/layout_builder_arch.md) | `[PLANNED]` | 2-Pillar system: Turnkey native player vs Declarative schema builder (`LayoutNode` JSON/XML), supporting Runtime Inflater (SDUI) and Build-Time AOT Compiler (CLI). |
-| **OS Media Sessions** | iOS & Android | `[PLANNED]` | `MPRemoteCommandCenter` / `MPNowPlayingInfoCenter` & `MediaSessionCompat`. |
+| **OS Media Sessions** | iOS & Android | `[COMPLETED]` | `MPRemoteCommandCenter` / `MPNowPlayingInfoCenter` (iOS) & `MediaSessionManager` (Android). |
 | **TV D-pad 2D Focus Grid** | tvOS & Android TV | `[PLANNED]` | Full 2D focus traversal between Top, Center, and Bottom sections. |
 | **Picture-in-Picture (PiP)** | iOS & Android | `[PLANNED]` | Background playback and PiP controllers. |
 

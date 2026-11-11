@@ -16,10 +16,12 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.events.RCTEventEmitter
+import com.player.audio.AudioFocusManager
 import com.player.core.PlaybackState
 import com.player.core.PlayerEngineBridge
 import com.player.core.PlayerStateCoordinator
 import com.player.core.PlayerStateObserver
+import com.player.media.MediaSessionManager
 import com.player.metadata.MediaMetadataResolver
 import com.player.network.DrmConfig
 import com.player.network.DrmType
@@ -49,6 +51,12 @@ class ReactVideoPlayer : FrameLayout {
     private val metadataResolver = MediaMetadataResolver()
     private lateinit var subtitleManager: SubtitleManager
     private val thumbnailProvider by lazy { ThumbnailProvider(context) }
+    private var isReleased: Boolean = false
+    private var savedPosition: Long = 0L
+    private var hasEmittedLoad: Boolean = false
+    private var wasPlayingBeforeFocusLoss: Boolean = false
+    private lateinit var audioFocusManager: AudioFocusManager
+    private var mediaSessionManager: MediaSessionManager? = null
 
     private var isLifecycleRegistered: Boolean = false
     private val lifecycleEventListener = object : LifecycleEventListener {
@@ -103,9 +111,43 @@ class ReactVideoPlayer : FrameLayout {
         // 1. Create ControlLayer
         this.controlLayer = ControlLayer(this.context)
 
+        // Audio Focus Manager
+        this.audioFocusManager = AudioFocusManager(this.context, object : AudioFocusManager.Listener {
+            override fun onAudioFocusGained() {
+                if (wasPlayingBeforeFocusLoss) {
+                    wasPlayingBeforeFocusLoss = false
+                    coordinator.requestPlay()
+                }
+                if (::playerRef.isInitialized) {
+                    playerRef.player.volume = 1.0f
+                }
+            }
+
+            override fun onAudioFocusLost() {
+                wasPlayingBeforeFocusLoss = false
+                coordinator.requestPause()
+            }
+
+            override fun onAudioFocusTransientLoss() {
+                wasPlayingBeforeFocusLoss = if (::playerRef.isInitialized) playerRef.player.isPlaying else false
+                coordinator.requestPause()
+            }
+
+            override fun onAudioFocusDuck() {
+                if (::playerRef.isInitialized) {
+                    playerRef.player.volume = 0.2f
+                }
+            }
+
+            override fun onAudioBecomingNoisy() {
+                coordinator.requestPause()
+            }
+        })
+
         // 2. Initialize Shared C++ State Coordinator via JNI
         val engineBridge = object : PlayerEngineBridge {
             override fun executePlay() {
+                audioFocusManager.requestFocus()
                 playerRef.play()
             }
 
@@ -138,12 +180,19 @@ class ReactVideoPlayer : FrameLayout {
                         isEnded = (newState == PlaybackState.Ended)
                     )
                     controlLayer.setBuffering(newState == PlaybackState.Buffering)
+                    mediaSessionManager?.updatePlaybackState(newState == PlaybackState.Playing)
                 }
             }
 
             override fun onTimeUpdated(currentTime: Double, duration: Double) {
                 post {
                     controlLayer.bottomSection.updateTime(currentTime, duration)
+                    val buffered = if (::playerRef.isInitialized) {
+                        playerRef.player.bufferedPosition.coerceAtLeast(0L).toDouble() / 1000.0
+                    } else 0.0
+                    emitOnProgress(currentTime, duration, buffered)
+                    val isPlaying = if (::playerRef.isInitialized) playerRef.player.isPlaying else false
+                    mediaSessionManager?.updatePlaybackState(isPlaying, (currentTime * 1000.0).toLong())
                 }
             }
 
@@ -160,11 +209,21 @@ class ReactVideoPlayer : FrameLayout {
             override fun onError(errorCode: Int, message: String) {
                 post {
                     controlLayer.setBuffering(false)
+                    emitOnError(errorCode, message)
                 }
             }
         }
 
         this.coordinator = PlayerStateCoordinator(engineBridge, stateObserver)
+
+        // Media Session Manager
+        this.mediaSessionManager = MediaSessionManager(
+            context = this.context,
+            player = playerRef.player,
+            onPlayRequested = { coordinator.requestPlay() },
+            onPauseRequested = { coordinator.requestPause() },
+            onSeekRequested = { posMs -> coordinator.requestSeek(posMs / 1000.0) }
+        )
 
         // 3. Attach ExoPlayer and Coordinator to ControlLayer
         this.controlLayer.attachPlayer(playerRef.player, this.coordinator)
@@ -182,12 +241,22 @@ class ReactVideoPlayer : FrameLayout {
                 Player.STATE_ENDED -> PlaybackState.Ended
                 else -> PlaybackState.Idle
             }
+            if (isPlaying) {
+                audioFocusManager.registerNoisyReceiver()
+            } else {
+                audioFocusManager.unregisterNoisyReceiver()
+            }
             coordinator.notifyEngineState(mappedState)
 
             val dur = playerRef.player.duration.coerceAtLeast(0L).toDouble() / 1000.0
             val cur = playerRef.player.currentPosition.coerceAtLeast(0L).toDouble() / 1000.0
             coordinator.notifyEngineDuration(dur)
             coordinator.notifyEngineTime(cur)
+
+            if (state == Player.STATE_READY && !hasEmittedLoad) {
+                hasEmittedLoad = true
+                emitOnLoad(dur)
+            }
         }
 
         // 5. Hook video size changes to remeasure playerView as soon as video aspect ratio is resolved
@@ -219,6 +288,8 @@ class ReactVideoPlayer : FrameLayout {
             val resolved = metadataResolver.resolve(explicitTitle, mediaMetadata, videoUrl)
             post {
                 controlLayer.setTitle(resolved.title)
+                val dur = if (::playerRef.isInitialized) playerRef.player.duration.coerceAtLeast(0L) else 0L
+                mediaSessionManager?.updateMetadata(resolved.title, dur)
                 if (resolved.artworkBytes != null) {
                     thumbnailProvider.loadThumbnail(videoUrl, resolved.artworkBytes, headerMap) { _ -> }
                 }
@@ -297,12 +368,15 @@ class ReactVideoPlayer : FrameLayout {
 
     fun setUrl(url: String) {
         this.videoUrl = url
+        this.hasEmittedLoad = false
         this.playerRef.videoUrl = url
         this.playerRef.configureNetwork(headerMap, drmConfig)
 
         // Automatically resolve initial title (from explicit prop or URL slug fallback)
         val initialMetadata = metadataResolver.resolve(explicitTitle, null, url)
         controlLayer.setTitle(initialMetadata.title)
+        val dur = if (::playerRef.isInitialized) playerRef.player.duration.coerceAtLeast(0L) else 0L
+        mediaSessionManager?.updateMetadata(initialMetadata.title, dur)
 
         // Asynchronously fetch or extract preview thumbnail
         thumbnailProvider.loadThumbnail(url, null, headerMap) { _ -> }
@@ -315,6 +389,8 @@ class ReactVideoPlayer : FrameLayout {
         this.explicitTitle = title
         val resolved = metadataResolver.resolve(title, null, videoUrl)
         controlLayer.setTitle(resolved.title)
+        val dur = if (::playerRef.isInitialized) playerRef.player.duration.coerceAtLeast(0L) else 0L
+        mediaSessionManager?.updateMetadata(resolved.title, dur)
     }
 
     fun setResizeMode(mode: String?) {
@@ -330,6 +406,16 @@ class ReactVideoPlayer : FrameLayout {
     }
 
     fun cleanUp() {
+        if (isReleased) return
+        isReleased = true
+        if (::playerRef.isInitialized) {
+            savedPosition = playerRef.player.currentPosition
+        }
+        if (::audioFocusManager.isInitialized) {
+            audioFocusManager.release()
+        }
+        mediaSessionManager?.release()
+        mediaSessionManager = null
         if (isLifecycleRegistered) {
             getThemedReactContext()?.removeLifecycleEventListener(lifecycleEventListener)
             isLifecycleRegistered = false
@@ -343,8 +429,12 @@ class ReactVideoPlayer : FrameLayout {
         fullscreenDialog = null
         fullscreenContainer = null
         thumbnailProvider.release()
-        coordinator.release()
-        playerRef.cleanUp()
+        if (::coordinator.isInitialized) {
+            coordinator.release()
+        }
+        if (::playerRef.isInitialized) {
+            playerRef.cleanUp()
+        }
     }
 
     fun seekTo(to: Int) {
@@ -524,6 +614,9 @@ class ReactVideoPlayer : FrameLayout {
             val activity = findActivity(context)
 
             if (fullscreen) {
+                if (::playerRef.isInitialized) {
+                    savedPosition = playerRef.player.currentPosition
+                }
                 controlLayer.setSafeAreaInsets(0, 0)
                 if (activity != null) {
                     originalOrientation = activity.requestedOrientation
@@ -594,8 +687,15 @@ class ReactVideoPlayer : FrameLayout {
 
                     fullscreenDialog = dialog
                     fullscreenContainer = container
+
+                    if (::playerRef.isInitialized && savedPosition > 0L) {
+                        playerRef.player.seekTo(savedPosition)
+                    }
                 }
             } else {
+                if (::playerRef.isInitialized) {
+                    savedPosition = playerRef.player.currentPosition
+                }
                 if (activity != null) {
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                     postDelayed({
@@ -634,6 +734,9 @@ class ReactVideoPlayer : FrameLayout {
                         )
                     )
                 }
+                if (::playerRef.isInitialized && savedPosition > 0L) {
+                    playerRef.player.seekTo(savedPosition)
+                }
                 post {
                     applySafeAreaLayout(width, height)
                 }
@@ -653,6 +756,43 @@ class ReactVideoPlayer : FrameLayout {
             }
             reactContext.getJSModule(RCTEventEmitter::class.java)
                 ?.receiveEvent(id, "onFullscreenChange", event)
+        } catch (_: Exception) {}
+    }
+
+    fun emitOnError(code: Int, message: String) {
+        try {
+            val reactContext = context as? ThemedReactContext ?: return
+            val event = Arguments.createMap().apply {
+                putInt("code", code)
+                putString("message", message)
+            }
+            val emitter = reactContext.getJSModule(RCTEventEmitter::class.java)
+            emitter?.receiveEvent(id, "onError", event)
+            emitter?.receiveEvent(id, "onVideoError", event)
+        } catch (_: Exception) {}
+    }
+
+    fun emitOnProgress(currentTime: Double, duration: Double, playableDuration: Double) {
+        try {
+            val reactContext = context as? ThemedReactContext ?: return
+            val event = Arguments.createMap().apply {
+                putDouble("currentTime", currentTime)
+                putDouble("duration", duration)
+                putDouble("playableDuration", playableDuration)
+            }
+            reactContext.getJSModule(RCTEventEmitter::class.java)
+                ?.receiveEvent(id, "onProgress", event)
+        } catch (_: Exception) {}
+    }
+
+    fun emitOnLoad(duration: Double) {
+        try {
+            val reactContext = context as? ThemedReactContext ?: return
+            val event = Arguments.createMap().apply {
+                putDouble("duration", duration)
+            }
+            reactContext.getJSModule(RCTEventEmitter::class.java)
+                ?.receiveEvent(id, "onLoad", event)
         } catch (_: Exception) {}
     }
 

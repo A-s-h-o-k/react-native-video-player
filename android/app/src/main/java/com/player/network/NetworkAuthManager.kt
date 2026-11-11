@@ -88,6 +88,9 @@ class NetworkAuthManager {
         val config = drmConfig
 
         if (config != null && config.type == DrmType.WIDEVINE && config.licenseServerUrl.isNotBlank()) {
+            require(config.licenseServerUrl.startsWith("https://")) {
+                "DRM license server URL must use HTTPS for security"
+            }
             val drmBuilder = MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
                 .setLicenseUri(config.licenseServerUrl)
                 .setMultiSession(config.multiSession)
