@@ -14,12 +14,12 @@
 
 | Field | Current Details |
 | :--- | :--- |
-| **Current Task** | Enterprise Full-Stack Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection |
+| **Current Task** | Shared C++ Core Concurrency, Memory Safety, Transition Matrix & Observer Notification Bug Fixes |
 | **Current Status** | `[COMPLETED]` |
-| **Primary Platforms** | Cross-Platform (JS/TS, Android Kotlin/Java, iOS Swift/Obj-C++, Shared C++) |
-| **Target Files** | • `.eslintignore`<br>• `.eslintrc.js`<br>• `tsconfig.json`<br>• `package.json`<br>• `knip.json`<br>• `App.tsx`<br>• `src/index.tsx`<br>• `android/build.gradle`<br>• `android/app/build.gradle`<br>• `android/detekt.yml`<br>• `android/app/proguard-rules.pro`<br>• `android/app/src/main/jni/CMakeLists.txt`<br>• `.swiftlint.yml`<br>• `ios/Player.xcodeproj/project.pbxproj`<br>• `.clang-tidy` |
-| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md)<br>• [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) |
-| **Acceptance Criteria** | 1. Add `.eslintignore` and configure ESLint with prop/method unused rules.<br>2. Enable TypeScript strict unused flags (`noUnusedLocals`, `noUnusedParameters`).<br>3. Add `knip` for full-project dead code, uncalled methods, and unused export detection.<br>4. Configure Detekt and Android Lint in Android Gradle with strict rules for unused code.<br>5. Add `.swiftlint.yml` and enable Xcode compiler flags (`GCC_WARN_UNUSED_PARAMETER`, `DEAD_CODE_STRIPPING`).<br>6. Add `.clang-tidy` and strict warning flags in CMakeLists.txt for shared C++.<br>7. Clean any existing lint/unused errors and verify all quality checks pass cleanly. |
+| **Primary Platforms** | Cross-Platform Shared C++ Core (`cpp/`) |
+| **Target Files** | • `cpp/PlayerStateCoordinator.cpp`<br>• `cpp/PlayerStateCoordinator.hpp`<br>• `cpp/IPlayerStateObserver.hpp`<br>• `cpp/IPlaybackEngineBridge.hpp`<br>• `cpp/PlayerTypes.hpp` |
+| **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [state_manager_arch.md](file:///Users/ashokammineni/video-player/new_2/Player/state_manager_arch.md)<br>• [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) |
+| **Acceptance Criteria** | 1. Fix data race in `requestVolume()`, `requestMute()`, `requestPlaybackRate()` by capturing snapshot values within mutex lock before unlock.<br>2. Migrate `bridge_` to `std::shared_ptr<IPlaybackEngineBridge>` with copy-inside-lock semantics to eliminate TOCTOU use-after-free risks.<br>3. Enforce destructor lifetime ordering (clear bridge before observers) and add exception guards around bridge calls.<br>4. Add whitelist transition validation matrix in `isValidTransition()` and check in `notifyEngineState()`.<br>5. Notify registered observers on mute, playback rate, and volume changes with backward-compatible overloads in `IPlayerStateObserver`.<br>6. Add missing `default: return "Unknown";` in `PlaybackStateToString()`. |
 
 ---
 
@@ -170,4 +170,4 @@ When a task in a specific subsystem is modified, the agent must update the follo
 
 ---
 
-*Last Updated: 2026-11-08 (Enterprise Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection Subsystem Completed & Synchronized)*
+*Last Updated: 2026-11-11 (Shared C++ Core Concurrency, Memory Safety, Transition Matrix & Observer Notification Bug Fixes Completed & Synchronized)*

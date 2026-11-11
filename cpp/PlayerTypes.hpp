@@ -48,6 +48,7 @@ inline const char* PlaybackStateToString(PlaybackState state) {
         case PlaybackState::Buffering: return "Buffering";
         case PlaybackState::Ended: return "Ended";
         case PlaybackState::Error: return "Error";
+        default: return "Unknown";
     }
 }
 

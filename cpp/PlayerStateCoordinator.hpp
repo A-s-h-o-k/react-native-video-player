@@ -16,6 +16,7 @@
 #include <mutex>
 #include <memory>
 #include <algorithm>
+#include <cstddef>
 
 namespace PlayerCore {
 
@@ -25,7 +26,9 @@ public:
     ~PlayerStateCoordinator();
 
     // 1. Engine Bridge Binding
+    void setEngineBridge(std::shared_ptr<IPlaybackEngineBridge> bridge);
     void setEngineBridge(IPlaybackEngineBridge* bridge);
+    void setEngineBridge(std::nullptr_t);
 
     // 2. Observer Subscriptions (Thread-Safe Weak Pointer Pattern)
     void addObserver(const std::shared_ptr<IPlayerStateObserver>& observer);
@@ -63,12 +66,13 @@ public:
 private:
     mutable std::mutex stateMutex_;
     PlayerSnapshot snapshot_;
-    IPlaybackEngineBridge* bridge_ = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> bridge_ = nullptr;
     std::vector<std::weak_ptr<IPlayerStateObserver>> observers_;
     bool wasPlayingBeforeScrub_ = false;
 
     std::vector<std::shared_ptr<IPlayerStateObserver>> getActiveObserversLocked();
     void updateStateInternal(PlaybackState newState);
+    bool isValidTransition(PlaybackState from, PlaybackState to);
 };
 
 

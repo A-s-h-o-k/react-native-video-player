@@ -7,6 +7,7 @@
 
 #include "PlayerStateCoordinator.hpp"
 #include <cmath>
+#include <iostream>
 
 namespace PlayerCore {
 
@@ -23,15 +24,31 @@ PlayerStateCoordinator::PlayerStateCoordinator() {
     snapshot_.bandwidthBitrateBps = 0.0;
 }
 
+// NOTE: PlayerStateCoordinator MUST outlive all calling threads.
+// Caller is responsible for ensuring worker and UI threads do not access the coordinator during or after destruction.
 PlayerStateCoordinator::~PlayerStateCoordinator() {
     std::lock_guard<std::mutex> lock(stateMutex_);
-    observers_.clear();
     bridge_ = nullptr;
+    observers_.clear();
+}
+
+void PlayerStateCoordinator::setEngineBridge(std::shared_ptr<IPlaybackEngineBridge> bridge) {
+    std::lock_guard<std::mutex> lock(stateMutex_);
+    bridge_ = std::move(bridge);
 }
 
 void PlayerStateCoordinator::setEngineBridge(IPlaybackEngineBridge* bridge) {
     std::lock_guard<std::mutex> lock(stateMutex_);
-    bridge_ = bridge;
+    if (bridge) {
+        bridge_ = std::shared_ptr<IPlaybackEngineBridge>(bridge, [](IPlaybackEngineBridge*) {});
+    } else {
+        bridge_ = nullptr;
+    }
+}
+
+void PlayerStateCoordinator::setEngineBridge(std::nullptr_t) {
+    std::lock_guard<std::mutex> lock(stateMutex_);
+    bridge_ = nullptr;
 }
 
 void PlayerStateCoordinator::addObserver(const std::shared_ptr<IPlayerStateObserver>& observer) {
@@ -94,7 +111,7 @@ PlayerSnapshot PlayerStateCoordinator::getSnapshot() const {
 #pragma mark - Inbound User Requests
 
 void PlayerStateCoordinator::requestPlay() {
-    IPlaybackEngineBridge* b = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> b;
     bool isEnded = false;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
@@ -102,28 +119,32 @@ void PlayerStateCoordinator::requestPlay() {
         b = bridge_;
     }
     if (b) {
-        if (isEnded) {
-            b->executeSeek(0.0);
-        }
-        b->executePlay();
+        try {
+            if (isEnded) {
+                b->executeSeek(0.0);
+            }
+            b->executePlay();
+        } catch (...) {}
     }
 }
 
 void PlayerStateCoordinator::requestPause() {
-    IPlaybackEngineBridge* b = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> b;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         b = bridge_;
     }
     if (b) {
-        b->executePause();
+        try {
+            b->executePause();
+        } catch (...) {}
     }
 }
 
 void PlayerStateCoordinator::requestTogglePlayPause() {
     bool isPlaying = false;
     bool isEnded = false;
-    IPlaybackEngineBridge* b = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> b;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         isPlaying = (snapshot_.state == PlaybackState::Playing);
@@ -131,19 +152,21 @@ void PlayerStateCoordinator::requestTogglePlayPause() {
         b = bridge_;
     }
     if (b) {
-        if (isPlaying) {
-            b->executePause();
-        } else if (isEnded) {
-            b->executeSeek(0.0);
-            b->executePlay();
-        } else {
-            b->executePlay();
-        }
+        try {
+            if (isPlaying) {
+                b->executePause();
+            } else if (isEnded) {
+                b->executeSeek(0.0);
+                b->executePlay();
+            } else {
+                b->executePlay();
+            }
+        } catch (...) {}
     }
 }
 
 void PlayerStateCoordinator::requestSeek(double seconds) {
-    IPlaybackEngineBridge* b = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> b;
     double clamped = 0.0;
     std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
     PlaybackState oldState = PlaybackState::Idle;
@@ -170,7 +193,9 @@ void PlayerStateCoordinator::requestSeek(double seconds) {
         }
     }
     if (b) {
-        b->executeSeek(clamped);
+        try {
+            b->executeSeek(clamped);
+        } catch (...) {}
     }
 }
 
@@ -213,7 +238,7 @@ void PlayerStateCoordinator::scrubTo(double seconds) {
 
 
 void PlayerStateCoordinator::endScrubbing(double finalSeconds) {
-    IPlaybackEngineBridge* b = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> b;
     bool shouldResume = false;
     double clamped = 0.0;
     std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
@@ -243,46 +268,81 @@ void PlayerStateCoordinator::endScrubbing(double finalSeconds) {
         }
     }
     if (b) {
-        b->executeSeek(clamped);
-        if (shouldResume) {
-            b->executePlay();
-        }
+        try {
+            b->executeSeek(clamped);
+            if (shouldResume) {
+                b->executePlay();
+            }
+        } catch (...) {}
     }
 }
 
 void PlayerStateCoordinator::requestPlaybackRate(float rate) {
-    IPlaybackEngineBridge* b = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> b;
+    float currentRate;
+    PlayerSnapshot snapshotCopy;
+    std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         snapshot_.playbackRate = rate;
+        currentRate = snapshot_.playbackRate;
+        snapshotCopy = snapshot_;
         b = bridge_;
+        observersCopy = getActiveObserversLocked();
     }
     if (b) {
-        b->executePlaybackRate(rate);
+        try {
+            b->executePlaybackRate(currentRate);
+        } catch (...) {}
+    }
+    for (const auto& obs : observersCopy) {
+        obs->onPlaybackRateChanged(snapshotCopy);
     }
 }
 
 void PlayerStateCoordinator::requestVolume(float volume) {
-    IPlaybackEngineBridge* b = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> b;
+    float clampedVol;
+    PlayerSnapshot snapshotCopy;
+    std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         snapshot_.volume = std::max(0.0f, std::min(1.0f, volume));
+        clampedVol = snapshot_.volume;
+        snapshotCopy = snapshot_;
         b = bridge_;
+        observersCopy = getActiveObserversLocked();
     }
     if (b) {
-        b->executeVolume(snapshot_.volume);
+        try {
+            b->executeVolume(clampedVol);
+        } catch (...) {}
+    }
+    for (const auto& obs : observersCopy) {
+        obs->onVolumeChanged(snapshotCopy);
     }
 }
 
 void PlayerStateCoordinator::requestMute(bool muted) {
-    IPlaybackEngineBridge* b = nullptr;
+    std::shared_ptr<IPlaybackEngineBridge> b;
+    bool currentMuted;
+    PlayerSnapshot snapshotCopy;
+    std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         snapshot_.isMuted = muted;
+        currentMuted = snapshot_.isMuted;
+        snapshotCopy = snapshot_;
         b = bridge_;
+        observersCopy = getActiveObserversLocked();
     }
     if (b) {
-        b->executeMute(muted);
+        try {
+            b->executeMute(currentMuted);
+        } catch (...) {}
+    }
+    for (const auto& obs : observersCopy) {
+        obs->onMuteChanged(snapshotCopy);
     }
 }
 
@@ -309,6 +369,29 @@ void PlayerStateCoordinator::requestReset() {
 
 #pragma mark - Inbound Engine Notifications
 
+bool PlayerStateCoordinator::isValidTransition(PlaybackState from, PlaybackState to) {
+    switch (from) {
+        case PlaybackState::Idle:
+            return to == PlaybackState::Loading;
+        case PlaybackState::Loading:
+            return to == PlaybackState::Ready || to == PlaybackState::Error;
+        case PlaybackState::Ready:
+            return to == PlaybackState::Playing || to == PlaybackState::Paused || to == PlaybackState::Error;
+        case PlaybackState::Playing:
+            return to == PlaybackState::Paused || to == PlaybackState::Buffering || to == PlaybackState::Ended || to == PlaybackState::Error;
+        case PlaybackState::Paused:
+            return to == PlaybackState::Playing || to == PlaybackState::Buffering || to == PlaybackState::Ended || to == PlaybackState::Error;
+        case PlaybackState::Buffering:
+            return to == PlaybackState::Playing || to == PlaybackState::Paused || to == PlaybackState::Error;
+        case PlaybackState::Ended:
+            return to == PlaybackState::Loading || to == PlaybackState::Idle;
+        case PlaybackState::Error:
+            return to == PlaybackState::Idle || to == PlaybackState::Loading;
+        default:
+            return false;
+    }
+}
+
 void PlayerStateCoordinator::notifyEngineState(PlaybackState state) {
     std::vector<std::shared_ptr<IPlayerStateObserver>> observersCopy;
     PlaybackState oldState = PlaybackState::Idle;
@@ -320,6 +403,11 @@ void PlayerStateCoordinator::notifyEngineState(PlaybackState state) {
         // Protect Ended state: do not allow engine Paused to overwrite Ended
         if (state == PlaybackState::Paused && snapshot_.state == PlaybackState::Ended) {
             return;
+        }
+        if (!isValidTransition(snapshot_.state, state)) {
+            std::cerr << "[PlayerStateCoordinator] Warning: Invalid state transition from "
+                      << PlaybackStateToString(snapshot_.state) << " to "
+                      << PlaybackStateToString(state) << std::endl;
         }
         oldState = snapshot_.state;
         snapshot_.state = state;

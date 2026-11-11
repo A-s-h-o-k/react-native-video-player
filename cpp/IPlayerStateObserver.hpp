@@ -24,6 +24,18 @@ public:
     virtual void onPlaybackRateChanged(float rate) = 0;
     virtual void onNetworkMetricsUpdated(double /*pingMs*/, double /*bandwidthBitrateBps*/) {}
     virtual void onError(int errorCode, const std::string& message) = 0;
+
+    // Additional observer methods with default implementations
+    virtual void onVolumeChanged(float /*volume*/) {}
+    virtual void onVolumeChanged(const PlayerSnapshot& snapshot) {
+        onVolumeChanged(snapshot.volume);
+    }
+    virtual void onMuteChanged(const PlayerSnapshot& snapshot) {
+        onMuteChanged(snapshot.isMuted, snapshot.volume);
+    }
+    virtual void onPlaybackRateChanged(const PlayerSnapshot& snapshot) {
+        onPlaybackRateChanged(snapshot.playbackRate);
+    }
 };
 
 } // namespace PlayerCore
