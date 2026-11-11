@@ -48,6 +48,9 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
     var onNetworkMetricsListener: ((pingMs: Long, throughputBps: Long) -> Unit)? = null
     var onVideoSizeChangedListener: ((width: Int, height: Int) -> Unit)? = null
 
+    private var playerListener: Player.Listener? = null
+    private var analyticsListener: AnalyticsListener? = null
+
     init {
         this.playerView.setBackgroundColor(android.graphics.Color.BLACK)
         this.playerView.useController = false
@@ -69,13 +72,20 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
 
     @OptIn(UnstableApi::class)
     fun startPlayer() {
+        this.player.stop()
+        this.player.clearMediaItems()
+
+        playerListener?.let { this.player.removeListener(it) }
+        analyticsListener?.let { this.player.removeAnalyticsListener(it) }
+
         val mediaSource = networkAuthManager.buildMediaSource(context, videoUrl)
         this.player.setMediaSource(mediaSource)
-        this.player.prepare();
-        this.player.playWhenReady = this.play;
+        this.player.prepare()
+        this.player.playWhenReady = this.play
         this.playerView.player = this.player
         this.playerView.useController = false
-        this.player.addListener(object : Player.Listener {
+
+        val newPlayerListener = object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     onVideoSizeChangedListener?.invoke(videoSize.width, videoSize.height)
@@ -110,8 +120,11 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
             override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
                 onTracksChangedListener?.invoke(tracks)
             }
-        })
-        this.player.addAnalyticsListener(object : AnalyticsListener {
+        }
+        this.playerListener = newPlayerListener
+        this.player.addListener(newPlayerListener)
+
+        val newAnalyticsListener = object : AnalyticsListener {
             override fun onLoadCompleted(
                 eventTime: AnalyticsListener.EventTime,
                 loadEventInfo: LoadEventInfo,
@@ -122,11 +135,13 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
                 val throughputBps = if (pingMs > 0) (bytes * 8000L) / pingMs else 0L
                 onNetworkMetricsListener?.invoke(pingMs, throughputBps)
             }
-        })
+        }
+        this.analyticsListener = newAnalyticsListener
+        this.player.addAnalyticsListener(newAnalyticsListener)
     }
 
     fun play() {
-        this.play = true;
+        this.play = true
         this.player.play()
     }
 
@@ -138,6 +153,10 @@ open class BasePlayer(private val context: Context, var play : Boolean = false, 
 
 
     fun cleanUp() {
+        playerListener?.let { this.player.removeListener(it) }
+        playerListener = null
+        analyticsListener?.let { this.player.removeAnalyticsListener(it) }
+        analyticsListener = null
         this.player.stop()
         this.player.release()
     }

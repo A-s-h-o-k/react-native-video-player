@@ -24,6 +24,13 @@
 
 static JavaVM* g_jvm = nullptr;
 
+static thread_local struct JNIThreadDetacher {
+    JavaVM* vm = nullptr;
+    ~JNIThreadDetacher() {
+        if (vm) vm->DetachCurrentThread();
+    }
+} sDetacher;
+
 static void initJavaVM(JNIEnv* env) {
     if (!g_jvm) {
         env->GetJavaVM(&g_jvm);
@@ -39,6 +46,7 @@ static JNIEnv* getEnv() {
             LOGE("Failed to attach current thread to JVM");
             return nullptr;
         }
+        sDetacher.vm = g_jvm;
     }
     return env;
 }
@@ -56,6 +64,7 @@ public:
         rateMethod_ = env->GetMethodID(clazz, "executePlaybackRate", "(F)V");
         volumeMethod_ = env->GetMethodID(clazz, "executeVolume", "(F)V");
         muteMethod_ = env->GetMethodID(clazz, "executeMute", "(Z)V");
+        env->DeleteLocalRef(clazz);
     }
 
     ~AndroidPlaybackEngineBridge() override {
@@ -70,6 +79,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && playMethod_) {
             env->CallVoidMethod(callback_, playMethod_);
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -77,6 +91,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && pauseMethod_) {
             env->CallVoidMethod(callback_, pauseMethod_);
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -84,6 +103,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && seekMethod_) {
             env->CallVoidMethod(callback_, seekMethod_, static_cast<jdouble>(seconds));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -91,6 +115,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && rateMethod_) {
             env->CallVoidMethod(callback_, rateMethod_, static_cast<jfloat>(rate));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -98,6 +127,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && volumeMethod_) {
             env->CallVoidMethod(callback_, volumeMethod_, static_cast<jfloat>(volume));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -105,6 +139,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && muteMethod_) {
             env->CallVoidMethod(callback_, muteMethod_, static_cast<jboolean>(muted));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -131,6 +170,7 @@ public:
         muteMethod_ = env->GetMethodID(clazz, "onMuteChanged", "(ZF)V");
         rateMethod_ = env->GetMethodID(clazz, "onPlaybackRateChanged", "(F)V");
         errorMethod_ = env->GetMethodID(clazz, "onError", "(ILjava/lang/String;)V");
+        env->DeleteLocalRef(clazz);
     }
 
     ~AndroidStateObserverBridge() override {
@@ -145,6 +185,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && stateMethod_) {
             env->CallVoidMethod(callback_, stateMethod_, static_cast<jint>(newState), static_cast<jint>(oldState));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -152,6 +197,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && timeMethod_) {
             env->CallVoidMethod(callback_, timeMethod_, static_cast<jdouble>(currentTime), static_cast<jdouble>(duration));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -159,6 +209,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && bufferMethod_) {
             env->CallVoidMethod(callback_, bufferMethod_, static_cast<jdouble>(bufferedTime), static_cast<jdouble>(percentage));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -166,6 +221,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && muteMethod_) {
             env->CallVoidMethod(callback_, muteMethod_, static_cast<jboolean>(isMuted), static_cast<jfloat>(volume));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -173,6 +233,11 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && rateMethod_) {
             env->CallVoidMethod(callback_, rateMethod_, static_cast<jfloat>(rate));
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
@@ -180,8 +245,17 @@ public:
         JNIEnv* env = getEnv();
         if (env && callback_ && errorMethod_) {
             jstring jmsg = env->NewStringUTF(message.c_str());
+            if (!jmsg) {
+                env->ExceptionClear();
+                return;
+            }
             env->CallVoidMethod(callback_, errorMethod_, static_cast<jint>(errorCode), jmsg);
             env->DeleteLocalRef(jmsg);
+            if (env->ExceptionCheck()) {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                return;
+            }
         }
     }
 
