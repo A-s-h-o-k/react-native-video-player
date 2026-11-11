@@ -766,8 +766,9 @@ class ReactVideoPlayer : FrameLayout {
                 putInt("code", code)
                 putString("message", message)
             }
-            reactContext.getJSModule(RCTEventEmitter::class.java)
-                ?.receiveEvent(id, "onError", event)
+            val emitter = reactContext.getJSModule(RCTEventEmitter::class.java)
+            emitter?.receiveEvent(id, "onError", event)
+            emitter?.receiveEvent(id, "onVideoError", event)
         } catch (_: Exception) {}
     }
 

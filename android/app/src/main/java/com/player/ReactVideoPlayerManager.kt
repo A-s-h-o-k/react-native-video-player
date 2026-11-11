@@ -163,6 +163,13 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
                                     "bubbled" to "onError",
                                     "captured" to "onErrorCapture"
                                 )),
+            "onVideoError" to
+                    mapOf(
+                        "phasedRegistrationNames" to
+                                mapOf(
+                                    "bubbled" to "onVideoError",
+                                    "captured" to "onVideoErrorCapture"
+                                )),
             "onProgress" to
                     mapOf(
                         "phasedRegistrationNames" to
@@ -177,4 +184,16 @@ class ReactVideoPlayerManager(context: ReactApplicationContext): SimpleViewManag
                                     "bubbled" to "onLoad",
                                     "captured" to "onLoadCapture"
                                 )))
+
+    override fun getExportedCustomDirectEventTypeConstants(): Map<String, Any> {
+        val base = super.getExportedCustomDirectEventTypeConstants() ?: emptyMap()
+        val custom = mutableMapOf<String, Any>(
+            "onVideoError" to mapOf("registrationName" to "onVideoError"),
+            "onError" to mapOf("registrationName" to "onError"),
+            "onProgress" to mapOf("registrationName" to "onProgress"),
+            "onLoad" to mapOf("registrationName" to "onLoad")
+        )
+        custom.putAll(base)
+        return custom
+    }
 }
