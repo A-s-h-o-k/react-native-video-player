@@ -14,12 +14,12 @@
 
 | Field | Current Details |
 | :--- | :--- |
-| **Current Task** | Enterprise Full-Stack Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection |
+| **Current Task** | React Native Bridge, Fabric Spec Events, SeekTo Validation, Theme Codegen Escaping, CI Workflow & Unit Tests |
 | **Current Status** | `[COMPLETED]` |
-| **Primary Platforms** | Cross-Platform (JS/TS, Android Kotlin/Java, iOS Swift/Obj-C++, Shared C++) |
-| **Target Files** | • `.eslintignore`<br>• `.eslintrc.js`<br>• `tsconfig.json`<br>• `package.json`<br>• `knip.json`<br>• `App.tsx`<br>• `src/index.tsx`<br>• `android/build.gradle`<br>• `android/app/build.gradle`<br>• `android/detekt.yml`<br>• `android/app/proguard-rules.pro`<br>• `android/app/src/main/jni/CMakeLists.txt`<br>• `.swiftlint.yml`<br>• `ios/Player.xcodeproj/project.pbxproj`<br>• `.clang-tidy` |
+| **Primary Platforms** | Cross-Platform (React Native TypeScript/Fabric, Node.js Build Scripts, GitHub Actions CI) |
+| **Target Files** | • `specs/VideoPlayerNativeComponent.ts`<br>• `src/index.tsx`<br>• `src/utils.ts`<br>• `scripts/build-theme.js`<br>• `.github/workflows/ci.yml`<br>• `__tests__/VideoPlayer.test.tsx`<br>• `__tests__/parseAspectRatio.test.ts`<br>• `__tests__/serializeIcons.test.ts` |
 | **Related Architecture Docs** | • [ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/ARCHITECTURE.md)<br>• [TESTING_ARCHITECTURE.md](file:///Users/ashokammineni/video-player/new_2/Player/TESTING_ARCHITECTURE.md)<br>• [quick-ref.md](file:///Users/ashokammineni/video-player/new_2/Player/quick-ref.md) |
-| **Acceptance Criteria** | 1. Add `.eslintignore` and configure ESLint with prop/method unused rules.<br>2. Enable TypeScript strict unused flags (`noUnusedLocals`, `noUnusedParameters`).<br>3. Add `knip` for full-project dead code, uncalled methods, and unused export detection.<br>4. Configure Detekt and Android Lint in Android Gradle with strict rules for unused code.<br>5. Add `.swiftlint.yml` and enable Xcode compiler flags (`GCC_WARN_UNUSED_PARAMETER`, `DEAD_CODE_STRIPPING`).<br>6. Add `.clang-tidy` and strict warning flags in CMakeLists.txt for shared C++.<br>7. Clean any existing lint/unused errors and verify all quality checks pass cleanly. |
+| **Acceptance Criteria** | 1. Add missing Fabric events (`onProgress`, `onLoad`, `onVideoError`, `onBuffer`, `onEnd`) to `specs/VideoPlayerNativeComponent.ts`.<br>2. Explicitly destructure `seekTo`, validate non-negative in `src/index.tsx`, pass through along with new events.<br>3. Fix template literal injection in `scripts/build-theme.js` using `escapeKotlinString` and `escapeObjCString`.<br>4. Create GitHub Actions CI workflow in `.github/workflows/ci.yml`.<br>5. Extract utilities to `src/utils.ts` and add unit tests (`VideoPlayer.test.tsx`, `parseAspectRatio.test.ts`, `serializeIcons.test.ts`). |
 
 ---
 
@@ -170,4 +170,4 @@ When a task in a specific subsystem is modified, the agent must update the follo
 
 ---
 
-*Last Updated: 2026-11-08 (Enterprise Code Quality, Native Linters, Dead Code Eliminators & Unused Member Detection Subsystem Completed & Synchronized)*
+*Last Updated: 2026-11-11 (React Native Bridge, Fabric Spec Events, SeekTo Validation, Theme Codegen Escaping, CI Workflow & Unit Tests Completed & Synchronized)*

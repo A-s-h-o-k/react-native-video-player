@@ -62,6 +62,23 @@ function sanitizeResourceName(name) {
   return name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
 }
 
+function escapeKotlinString(value) {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\$/g, '\\$');
+}
+
+function escapeObjCString(value) {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
+}
+
 function run() {
   console.log('⚡ [VideoPlayer AOT] Starting Ahead-Of-Time Theme & Asset Compilation...');
 
@@ -183,9 +200,9 @@ function run() {
  */
 object PlayerThemeGenerated {
     const val IS_CUSTOM_THEME: Boolean = ${isCustom}
-    const val ACCENT_COLOR: String = "${theme.accentColor}"
-    const val TRACK_COLOR: String = "${theme.trackColor}"
-    const val BUFFER_COLOR: String = "${theme.bufferColor}"
+    const val ACCENT_COLOR: String = "${escapeKotlinString(theme.accentColor)}"
+    const val TRACK_COLOR: String = "${escapeKotlinString(theme.trackColor)}"
+    const val BUFFER_COLOR: String = "${escapeKotlinString(theme.bufferColor)}"
     const val SKIP_INTERVAL: Int = ${behavior.skipInterval}
     const val AUTO_HIDE_TIMEOUT: Int = ${behavior.autoHideTimeout}
     const val SHOW_REWIND_BUTTON: Boolean = ${Boolean(behavior.showRewindButton)}
@@ -194,17 +211,17 @@ object PlayerThemeGenerated {
     const val SHOW_FULLSCREEN_BUTTON: Boolean = ${Boolean(behavior.showFullscreenButton)}
 
     // Icon & Notch Asset References
-    const val ICON_PLAY: String = "${resolvedIcons.play || ''}"
-    const val ICON_PAUSE: String = "${resolvedIcons.pause || ''}"
-    const val ICON_REPLAY: String = "${resolvedIcons.replay || ''}"
-    const val ICON_REWIND: String = "${resolvedIcons.rewind || ''}"
-    const val ICON_FORWARD: String = "${resolvedIcons.forward || ''}"
-    const val ICON_FULLSCREEN_ENTER: String = "${resolvedIcons.fullscreenEnter || ''}"
-    const val ICON_FULLSCREEN_EXIT: String = "${resolvedIcons.fullscreenExit || ''}"
-    const val ICON_SLIDER_THUMB: String = "${resolvedIcons.sliderThumb || ''}"
-    const val ICON_BACK: String = "${resolvedIcons.back || ''}"
-    const val ICON_CAPTIONS: String = "${resolvedIcons.captions || ''}"
-    const val ICON_SETTINGS: String = "${resolvedIcons.settings || ''}"
+    const val ICON_PLAY: String = "${escapeKotlinString(resolvedIcons.play || '')}"
+    const val ICON_PAUSE: String = "${escapeKotlinString(resolvedIcons.pause || '')}"
+    const val ICON_REPLAY: String = "${escapeKotlinString(resolvedIcons.replay || '')}"
+    const val ICON_REWIND: String = "${escapeKotlinString(resolvedIcons.rewind || '')}"
+    const val ICON_FORWARD: String = "${escapeKotlinString(resolvedIcons.forward || '')}"
+    const val ICON_FULLSCREEN_ENTER: String = "${escapeKotlinString(resolvedIcons.fullscreenEnter || '')}"
+    const val ICON_FULLSCREEN_EXIT: String = "${escapeKotlinString(resolvedIcons.fullscreenExit || '')}"
+    const val ICON_SLIDER_THUMB: String = "${escapeKotlinString(resolvedIcons.sliderThumb || '')}"
+    const val ICON_BACK: String = "${escapeKotlinString(resolvedIcons.back || '')}"
+    const val ICON_CAPTIONS: String = "${escapeKotlinString(resolvedIcons.captions || '')}"
+    const val ICON_SETTINGS: String = "${escapeKotlinString(resolvedIcons.settings || '')}"
 }
 `;
 
@@ -225,9 +242,9 @@ object PlayerThemeGenerated {
 #import <Foundation/Foundation.h>
 
 #define THEME_GEN_IS_CUSTOM ${isCustom ? 'YES' : 'NO'}
-#define THEME_GEN_ACCENT_COLOR @"${theme.accentColor}"
-#define THEME_GEN_TRACK_COLOR @"${theme.trackColor}"
-#define THEME_GEN_BUFFER_COLOR @"${theme.bufferColor}"
+#define THEME_GEN_ACCENT_COLOR @"${escapeObjCString(theme.accentColor)}"
+#define THEME_GEN_TRACK_COLOR @"${escapeObjCString(theme.trackColor)}"
+#define THEME_GEN_BUFFER_COLOR @"${escapeObjCString(theme.bufferColor)}"
 #define THEME_GEN_SKIP_INTERVAL ${behavior.skipInterval}
 #define THEME_GEN_AUTO_HIDE_TIMEOUT ${behavior.autoHideTimeout}
 #define THEME_GEN_SHOW_REWIND_BUTTON ${behavior.showRewindButton ? 'YES' : 'NO'}
@@ -236,17 +253,17 @@ object PlayerThemeGenerated {
 #define THEME_GEN_SHOW_FULLSCREEN_BUTTON ${behavior.showFullscreenButton ? 'YES' : 'NO'}
 
 // Icon & Notch Asset References
-#define THEME_GEN_ICON_PLAY @"${resolvedIcons.play || ''}"
-#define THEME_GEN_ICON_PAUSE @"${resolvedIcons.pause || ''}"
-#define THEME_GEN_ICON_REPLAY @"${resolvedIcons.replay || ''}"
-#define THEME_GEN_ICON_REWIND @"${resolvedIcons.rewind || ''}"
-#define THEME_GEN_ICON_FORWARD @"${resolvedIcons.forward || ''}"
-#define THEME_GEN_ICON_FULLSCREEN_ENTER @"${resolvedIcons.fullscreenEnter || ''}"
-#define THEME_GEN_ICON_FULLSCREEN_EXIT @"${resolvedIcons.fullscreenExit || ''}"
-#define THEME_GEN_ICON_SLIDER_THUMB @"${resolvedIcons.sliderThumb || ''}"
-#define THEME_GEN_ICON_BACK @"${resolvedIcons.back || ''}"
-#define THEME_GEN_ICON_CAPTIONS @"${resolvedIcons.captions || ''}"
-#define THEME_GEN_ICON_SETTINGS @"${resolvedIcons.settings || ''}"
+#define THEME_GEN_ICON_PLAY @"${escapeObjCString(resolvedIcons.play || '')}"
+#define THEME_GEN_ICON_PAUSE @"${escapeObjCString(resolvedIcons.pause || '')}"
+#define THEME_GEN_ICON_REPLAY @"${escapeObjCString(resolvedIcons.replay || '')}"
+#define THEME_GEN_ICON_REWIND @"${escapeObjCString(resolvedIcons.rewind || '')}"
+#define THEME_GEN_ICON_FORWARD @"${escapeObjCString(resolvedIcons.forward || '')}"
+#define THEME_GEN_ICON_FULLSCREEN_ENTER @"${escapeObjCString(resolvedIcons.fullscreenEnter || '')}"
+#define THEME_GEN_ICON_FULLSCREEN_EXIT @"${escapeObjCString(resolvedIcons.fullscreenExit || '')}"
+#define THEME_GEN_ICON_SLIDER_THUMB @"${escapeObjCString(resolvedIcons.sliderThumb || '')}"
+#define THEME_GEN_ICON_BACK @"${escapeObjCString(resolvedIcons.back || '')}"
+#define THEME_GEN_ICON_CAPTIONS @"${escapeObjCString(resolvedIcons.captions || '')}"
+#define THEME_GEN_ICON_SETTINGS @"${escapeObjCString(resolvedIcons.settings || '')}"
 
 #endif /* PlayerThemeGenerated_h */
 `;
